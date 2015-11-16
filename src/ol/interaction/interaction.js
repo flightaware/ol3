@@ -94,6 +94,7 @@ ol.interaction.Interaction.prototype.setMap = function(map) {
  * @param {ol.View} view View.
  * @param {ol.Coordinate} delta Delta.
  * @param {number=} opt_duration Duration.
+ * @nocollapse
  */
 ol.interaction.Interaction.pan = function(view, delta, opt_duration) {
   var currentCenter = view.getCenter();
@@ -131,6 +132,7 @@ ol.interaction.Interaction.rotate = function(view, rotation, opt_anchor, opt_dur
  * @param {number|undefined} rotation Rotation.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
+ * @nocollapse
  */
 ol.interaction.Interaction.rotateWithoutConstraints = function(view, rotation, opt_anchor, opt_duration) {
   if (rotation !== undefined) {
@@ -176,6 +178,7 @@ ol.interaction.Interaction.zoom = function(view, resolution, opt_anchor, opt_dur
  * @param {number} delta Delta from previous zoom level.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
+ * @nocollapse
  */
 ol.interaction.Interaction.zoomByDelta = function(view, delta, opt_anchor, opt_duration) {
   var currentResolution = view.getResolution();
@@ -207,6 +210,7 @@ ol.interaction.Interaction.zoomByDelta = function(view, delta, opt_anchor, opt_d
  * @param {number|undefined} resolution Resolution to go to.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
+ * @nocollapse
  */
 ol.interaction.Interaction.zoomWithoutConstraints = function(view, resolution, opt_anchor, opt_duration) {
   if (resolution) {
