@@ -102,6 +102,7 @@ ol.interaction.DragPan.handleDragEvent_ = function(mapBrowserEvent) {
  * @return {boolean} Stop drag sequence?
  * @this {ol.interaction.DragPan}
  * @private
+ * @nocollapse
  */
 ol.interaction.DragPan.handleUpEvent_ = function(mapBrowserEvent) {
   var map = mapBrowserEvent.map;

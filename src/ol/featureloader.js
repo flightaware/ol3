@@ -15,6 +15,7 @@ goog.require('ol.xml');
  *     Function called when loading failed. Called with the vector tile or
  *     source as `this`.
  * @return {ol.FeatureLoader} The feature loader.
+ * @api
  */
 ol.featureloader.loadFeaturesXhr = function(url, format, success, failure) {
   return (
