@@ -483,6 +483,7 @@ ol.extent.forEachCorner = function(extent, callback, opt_this) {
 /**
  * @param {ol.Extent} extent Extent.
  * @return {number} Area.
+ * @api
  */
 ol.extent.getArea = function(extent) {
   var area = 0;
