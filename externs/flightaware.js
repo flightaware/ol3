@@ -18,4 +18,5 @@ ol.control.Attribution;
 ol.control.Attribution.prototype.getSourceAttributions = function(){};
 
 ol.source.Vector.prototype.loadFeatures = function(){};
+ol.source.Vector.prototype.getFeatures = function(){};
 
