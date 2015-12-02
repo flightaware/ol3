@@ -403,13 +403,13 @@ ol.render.canvas.Replay.prototype.replay_ = function(
           var lines = text.split('\n');
           var numLines = lines.length;
           if (numLines > 1) {
-            // Estimate line height using width of capital M, and add some padding
+            // Estimate line height using width of capital M, and add padding
             var fontSize = Math.round(context.measureText('M').width * 1.5);
             var lineY = y - (((numLines - 1) / 2) * fontSize);
           } else {
             // No need to calculate line height/offset for a single line
             var fontSize = 0;
-            var lineY = y
+            var lineY = y;
           }
 
           for (var lineIndex = 0; lineIndex < numLines; lineIndex++) {
