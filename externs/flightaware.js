@@ -20,3 +20,7 @@ ol.control.Attribution.prototype.getSourceAttributions = function(){};
 ol.source.Vector.prototype.loadFeatures = function(){};
 ol.source.Vector.prototype.getFeatures = function(){};
 
+ol.source.Cluster.prototype.loadFeatures = function(){};
+ol.source.Cluster.prototype.onSourceChange_ = function(){};
+ol.source.Cluster.prototype.cluster_ = function(){};
+ol.source.Cluster.prototype.createCluster_ = function(){};
