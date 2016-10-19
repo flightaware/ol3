@@ -55,6 +55,14 @@ ol.control.ZoomToExtent = function(opt_options) {
 };
 ol.inherits(ol.control.ZoomToExtent, ol.control.Control);
 
+/**
+ * @param {ol.Extent} extent The extent for the control to use
+ * @api
+ */
+ol.control.ZoomToExtent.prototype.setExtent = function(extent) {
+  this.extent_ = extent;
+}
+
 
 /**
  * @param {Event} event The event to handle
