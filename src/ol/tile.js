@@ -68,6 +68,7 @@ ol.Tile.prototype.getImage = function(opt_context) {};
 
 /**
  * @return {string} Key.
+ * @api
  */
 ol.Tile.prototype.getKey = function() {
   return this.key + '/' + this.tileCoord;
@@ -86,6 +87,7 @@ ol.Tile.prototype.getTileCoord = function() {
 
 /**
  * @return {ol.Tile.State} State.
+ * @api
  */
 ol.Tile.prototype.getState = function() {
   return this.state;
