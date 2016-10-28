@@ -150,3 +150,11 @@ ol.TileRange.prototype.intersects = function(tileRange) {
       this.minY <= tileRange.maxY &&
       this.maxY >= tileRange.minY;
 };
+
+/**
+ * Return the range values
+ * @api
+ */
+ol.TileRange.prototype.getValues = function() {
+  return [this.minY,this.minX,this.maxY,this.maxX];
+}
