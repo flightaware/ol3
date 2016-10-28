@@ -61,6 +61,7 @@ ol.Tile.prototype.changed = function() {
 
 /**
  * @return {string} Key.
+ * @api
  */
 ol.Tile.prototype.getKey = function() {
   return this.key + '/' + this.tileCoord;
@@ -139,7 +140,8 @@ ol.Tile.prototype.getTileCoord = function() {
 
 
 /**
- * @return {ol.TileState} State.
+ * @return {ol.Tile.State} State.
+ * @api
  */
 ol.Tile.prototype.getState = function() {
   return this.state;

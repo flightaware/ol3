@@ -59,6 +59,7 @@ ol.inherits(ol.TileQueue, ol.structs.PriorityQueue);
 
 /**
  * @inheritDoc
+ * @api
  */
 ol.TileQueue.prototype.enqueue = function(element) {
   var added = ol.structs.PriorityQueue.prototype.enqueue.call(this, element);
@@ -103,6 +104,7 @@ ol.TileQueue.prototype.handleTileChange = function(event) {
 /**
  * @param {number} maxTotalLoading Maximum number tiles to load simultaneously.
  * @param {number} maxNewLoads Maximum number of new tiles to load.
+ * @api
  */
 ol.TileQueue.prototype.loadMoreTiles = function(maxTotalLoading, maxNewLoads) {
   var newLoads = 0;

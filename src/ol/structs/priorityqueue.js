@@ -177,6 +177,7 @@ ol.structs.PriorityQueue.prototype.isEmpty = function() {
 /**
  * @param {string} key Key.
  * @return {boolean} Is key queued.
+ * @api
  */
 ol.structs.PriorityQueue.prototype.isKeyQueued = function(key) {
   return key in this.queuedElements_;
