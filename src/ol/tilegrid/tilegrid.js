@@ -164,6 +164,7 @@ ol.tilegrid.TileGrid.tmpTileCoord_ = [0, 0, 0];
  * @param {ol.Extent} extent Extent.
  * @param {number} zoom Integer zoom level.
  * @param {function(ol.TileCoord)} callback Function called with each tile coordinate.
+ * @api
  */
 ol.tilegrid.TileGrid.prototype.forEachTileCoord = function(extent, zoom, callback) {
   var tileRange = this.getTileRangeForExtentAndZ(extent, zoom);
