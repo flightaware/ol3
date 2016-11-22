@@ -757,6 +757,22 @@ ol.Map.prototype.getCoordinateFromPixel = function(pixel) {
   }
 };
 
+/**
+ * Get the map tileQueue
+ * @api
+ */
+ol.Map.prototype.getFrameState = function() {
+  return this.frameState_;
+}
+
+/**
+ * Expose the uid function
+ * @api
+ */
+ol.Map.prototype.uid = function(val) {
+	return ol.getUid(val);
+}
+
 
 /**
  * Get the map controls. Modifying this collection changes the controls
