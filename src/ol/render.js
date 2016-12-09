@@ -1,8 +1,8 @@
 goog.provide('ol.render');
 
-goog.require('goog.vec.Mat4');
+goog.require('ol.has');
+goog.require('ol.transform');
 goog.require('ol.render.canvas.Immediate');
-goog.require('ol.vec.Mat4');
 
 
 /**
@@ -16,12 +16,9 @@ goog.require('ol.vec.Mat4');
  * var render = ol.render.toContext(canvas.getContext('2d'),
  *     { size: [100, 100] });
  * render.setFillStrokeStyle(new ol.style.Fill({ color: blue }));
- * render.drawPolygonGeometry(
+ * render.drawPolygon(
  *     new ol.geom.Polygon([[[0, 0], [100, 100], [100, 0], [0, 0]]]));
  * ```
- *
- * Note that {@link ol.render.canvas.Immediate#drawAsync} and
- * {@link ol.render.canvas.Immediate#drawFeature} cannot be used.
  *
  * @param {CanvasRenderingContext2D} context Canvas context.
  * @param {olx.render.ToContextOptions=} opt_options Options.
@@ -40,8 +37,7 @@ ol.render.toContext = function(context, opt_options) {
     canvas.style.height = size[1] + 'px';
   }
   var extent = [0, 0, canvas.width, canvas.height];
-  var transform = ol.vec.Mat4.makeTransform2D(goog.vec.Mat4.createNumber(),
-      0, 0, pixelRatio, pixelRatio, 0, 0, 0);
+  var transform = ol.transform.scale(ol.transform.create(), pixelRatio, pixelRatio);
   return new ol.render.canvas.Immediate(context, pixelRatio, extent, transform,
       0);
 };

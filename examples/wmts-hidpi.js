@@ -6,7 +6,7 @@ goog.require('ol.layer.Tile');
 goog.require('ol.source.WMTS');
 
 
-var capabilitiesUrl = 'http://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml';
+var capabilitiesUrl = 'https://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml';
 
 // HiDPI support:
 // * Use 'bmaphidpi' layer (pixel ratio 2) for device pixel ratio > 1
@@ -30,7 +30,6 @@ fetch(capabilitiesUrl).then(function(response) {
   var options = ol.source.WMTS.optionsFromCapabilities(result, {
     layer: layer,
     matrixSet: 'google3857',
-    requestEncoding: 'REST',
     style: 'normal'
   });
   options.tilePixelRatio = tilePixelRatio;

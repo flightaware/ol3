@@ -1,5 +1,17 @@
 goog.provide('ol.test.rendering.style.Circle');
 
+goog.require('ol.Feature');
+goog.require('ol.geom.Point');
+goog.require('ol.Map');
+goog.require('ol.View');
+goog.require('ol.layer.Vector');
+goog.require('ol.source.Vector');
+goog.require('ol.style.Circle');
+goog.require('ol.style.Fill');
+goog.require('ol.style.Style');
+goog.require('ol.style.Stroke');
+
+
 describe('ol.rendering.style.Circle', function() {
 
   var target, map, vectorSource;
@@ -8,7 +20,7 @@ describe('ol.rendering.style.Circle', function() {
     target = createMapDiv(50, 50);
 
     vectorSource = new ol.source.Vector();
-    vectorLayer = new ol.layer.Vector({
+    var vectorLayer = new ol.layer.Vector({
       source: vectorSource
     });
 
@@ -187,15 +199,3 @@ describe('ol.rendering.style.Circle', function() {
     });
   });
 });
-
-goog.require('goog.dispose');
-goog.require('ol.Feature');
-goog.require('ol.geom.Point');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Style');
-goog.require('ol.style.Stroke');

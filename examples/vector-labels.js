@@ -3,7 +3,7 @@ goog.require('ol.View');
 goog.require('ol.format.GeoJSON');
 goog.require('ol.layer.Tile');
 goog.require('ol.layer.Vector');
-goog.require('ol.source.MapQuest');
+goog.require('ol.source.OSM');
 goog.require('ol.source.Vector');
 goog.require('ol.style.Circle');
 goog.require('ol.style.Fill');
@@ -172,7 +172,7 @@ var vectorPoints = new ol.layer.Vector({
 var map = new ol.Map({
   layers: [
     new ol.layer.Tile({
-      source: new ol.source.MapQuest({layer: 'osm'})
+      source: new ol.source.OSM()
     }),
     vectorPolygons,
     vectorLines,
@@ -215,7 +215,8 @@ String.prototype.trunc = String.prototype.trunc ||
 function stringDivider(str, width, spaceReplacer) {
   if (str.length > width) {
     var p = width;
-    for (; p > 0 && (str[p] != ' ' && str[p] != '-'); p--) {
+    while (p > 0 && (str[p] != ' ' && str[p] != '-')) {
+      p--;
     }
     if (p > 0) {
       var left;

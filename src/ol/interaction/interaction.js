@@ -1,22 +1,11 @@
 // FIXME factor out key precondition (shift et. al)
 
 goog.provide('ol.interaction.Interaction');
-goog.provide('ol.interaction.InteractionProperty');
 
 goog.require('ol');
-goog.require('ol.MapBrowserEvent');
 goog.require('ol.Object');
 goog.require('ol.animation');
 goog.require('ol.easing');
-
-
-/**
- * @enum {string}
- */
-ol.interaction.InteractionProperty = {
-  ACTIVE: 'active'
-};
-
 
 
 /**
@@ -38,7 +27,7 @@ ol.interaction.InteractionProperty = {
  */
 ol.interaction.Interaction = function(options) {
 
-  goog.base(this);
+  ol.Object.call(this);
 
   /**
    * @private
@@ -54,7 +43,7 @@ ol.interaction.Interaction = function(options) {
   this.handleEvent = options.handleEvent;
 
 };
-goog.inherits(ol.interaction.Interaction, ol.Object);
+ol.inherits(ol.interaction.Interaction, ol.Object);
 
 
 /**
@@ -65,7 +54,7 @@ goog.inherits(ol.interaction.Interaction, ol.Object);
  */
 ol.interaction.Interaction.prototype.getActive = function() {
   return /** @type {boolean} */ (
-      this.get(ol.interaction.InteractionProperty.ACTIVE));
+      this.get(ol.interaction.Interaction.Property.ACTIVE));
 };
 
 
@@ -86,7 +75,7 @@ ol.interaction.Interaction.prototype.getMap = function() {
  * @api
  */
 ol.interaction.Interaction.prototype.setActive = function(active) {
-  this.set(ol.interaction.InteractionProperty.ACTIVE, active);
+  this.set(ol.interaction.Interaction.Property.ACTIVE, active);
 };
 
 
@@ -131,8 +120,7 @@ ol.interaction.Interaction.pan = function(map, view, delta, opt_duration) {
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.rotate =
-    function(map, view, rotation, opt_anchor, opt_duration) {
+ol.interaction.Interaction.rotate = function(map, view, rotation, opt_anchor, opt_duration) {
   rotation = view.constrainRotation(rotation, 0);
   ol.interaction.Interaction.rotateWithoutConstraints(
       map, view, rotation, opt_anchor, opt_duration);
@@ -146,8 +134,7 @@ ol.interaction.Interaction.rotate =
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.rotateWithoutConstraints =
-    function(map, view, rotation, opt_anchor, opt_duration) {
+ol.interaction.Interaction.rotateWithoutConstraints = function(map, view, rotation, opt_anchor, opt_duration) {
   if (rotation !== undefined) {
     var currentRotation = view.getRotation();
     var currentCenter = view.getCenter();
@@ -186,8 +173,7 @@ ol.interaction.Interaction.rotateWithoutConstraints =
  *     will select the nearest resolution. If not defined 0 is
  *     assumed.
  */
-ol.interaction.Interaction.zoom =
-    function(map, view, resolution, opt_anchor, opt_duration, opt_direction) {
+ol.interaction.Interaction.zoom = function(map, view, resolution, opt_anchor, opt_duration, opt_direction) {
   resolution = view.constrainResolution(resolution, 0, opt_direction);
   ol.interaction.Interaction.zoomWithoutConstraints(
       map, view, resolution, opt_anchor, opt_duration);
@@ -201,8 +187,7 @@ ol.interaction.Interaction.zoom =
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.zoomByDelta =
-    function(map, view, delta, opt_anchor, opt_duration) {
+ol.interaction.Interaction.zoomByDelta = function(map, view, delta, opt_anchor, opt_duration) {
   var currentResolution = view.getResolution();
   var resolution = view.constrainResolution(currentResolution, delta, 0);
   ol.interaction.Interaction.zoomWithoutConstraints(
@@ -217,8 +202,7 @@ ol.interaction.Interaction.zoomByDelta =
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.zoomWithoutConstraints =
-    function(map, view, resolution, opt_anchor, opt_duration) {
+ol.interaction.Interaction.zoomWithoutConstraints = function(map, view, resolution, opt_anchor, opt_duration) {
   if (resolution) {
     var currentResolution = view.getResolution();
     var currentCenter = view.getCenter();
@@ -244,4 +228,12 @@ ol.interaction.Interaction.zoomWithoutConstraints =
     }
     view.setResolution(resolution);
   }
+};
+
+
+/**
+ * @enum {string}
+ */
+ol.interaction.Interaction.Property = {
+  ACTIVE: 'active'
 };

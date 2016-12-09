@@ -7,9 +7,7 @@ var marked = require('marked');
 var pkg = require('../package.json');
 
 var markupRegEx = /([^\/^\.]*)\.html$/;
-/* jshint -W101 */
-var cleanupJSRegEx = /.*(\/\/ NOCOMPILE|goog\.require\(.*\);|.*renderer: common\..*,?)[\n]*/g;
-/* jshint +W101 */
+var cleanupJSRegEx = /.*(\/\/ NOCOMPILE|goog\.require\(.*\);)[\n]*/g;
 var requiresRegEx = /.*goog\.require\('(ol\.\S*)'\);/g;
 var isCssRegEx = /\.css$/;
 var isJsRegEx = /\.js$/;
@@ -48,7 +46,7 @@ function getLinkToApiHtml(requires) {
   var lis = requires.map(function(symb) {
     var href = '../apidoc/' + symb + '.html';
     return '<li><a href="' + href + '" title="API documentation for ' +
-        symb +'">' + symb + '</a></li>';
+        symb + '">' + symb + '</a></li>';
   });
   return '<ul class="inline">' + lis.join() + '</ul>';
 }
@@ -84,7 +82,9 @@ function augmentExamples(files, metalsmith, done) {
       if (!(jsFilename in files)) {
         throw new Error('No .js file found for ' + filename);
       }
-      var jsSource = files[jsFilename].contents.toString();
+      var jsSource = files[jsFilename].contents.toString()
+          // Change data paths to absolute urls
+          .replace(/'data\//g, '\'http://openlayers.org/en/v' + pkg.version + '/examples/data/');
       if (file.cloak) {
         for (var key in file.cloak) {
           jsSource = jsSource.replace(new RegExp(key, 'g'), file.cloak[key]);
@@ -135,7 +135,7 @@ function augmentExamples(files, metalsmith, done) {
         }
         file.extraHead = {
           local: resources.join('\n'),
-          remote: remoteResources.join('\n'),
+          remote: remoteResources.join('\n')
         };
         file.extraResources = file.resources.length ?
             ',' + fiddleResources.join(',') : '';

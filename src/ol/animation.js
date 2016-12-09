@@ -1,8 +1,7 @@
 goog.provide('ol.animation');
 
 goog.require('ol');
-goog.require('ol.PreRenderFunction');
-goog.require('ol.ViewHint');
+goog.require('ol.View');
 goog.require('ol.coordinate');
 goog.require('ol.easing');
 
@@ -24,18 +23,19 @@ ol.animation.bounce = function(options) {
       /**
        * @param {ol.Map} map Map.
        * @param {?olx.FrameState} frameState Frame state.
+       * @return {boolean} Run this function in the next frame.
        */
       function(map, frameState) {
         if (frameState.time < start) {
           frameState.animate = true;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else if (frameState.time < start + duration) {
           var delta = easing((frameState.time - start) / duration);
           var deltaResolution = resolution - frameState.viewState.resolution;
           frameState.animate = true;
           frameState.viewState.resolution += delta * deltaResolution;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else {
           return false;
@@ -62,11 +62,12 @@ ol.animation.pan = function(options) {
       /**
        * @param {ol.Map} map Map.
        * @param {?olx.FrameState} frameState Frame state.
+       * @return {boolean} Run this function in the next frame.
        */
       function(map, frameState) {
         if (frameState.time < start) {
           frameState.animate = true;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else if (frameState.time < start + duration) {
           var delta = 1 - easing((frameState.time - start) / duration);
@@ -75,7 +76,7 @@ ol.animation.pan = function(options) {
           frameState.animate = true;
           frameState.viewState.center[0] += delta * deltaX;
           frameState.viewState.center[1] += delta * deltaY;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else {
           return false;
@@ -103,11 +104,12 @@ ol.animation.rotate = function(options) {
       /**
        * @param {ol.Map} map Map.
        * @param {?olx.FrameState} frameState Frame state.
+       * @return {boolean} Run this function in the next frame.
        */
       function(map, frameState) {
         if (frameState.time < start) {
           frameState.animate = true;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else if (frameState.time < start + duration) {
           var delta = 1 - easing((frameState.time - start) / duration);
@@ -121,7 +123,7 @@ ol.animation.rotate = function(options) {
             ol.coordinate.rotate(center, deltaRotation);
             ol.coordinate.add(center, anchor);
           }
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else {
           return false;
@@ -146,11 +148,12 @@ ol.animation.zoom = function(options) {
       /**
        * @param {ol.Map} map Map.
        * @param {?olx.FrameState} frameState Frame state.
+       * @return {boolean} Run this function in the next frame.
        */
       function(map, frameState) {
         if (frameState.time < start) {
           frameState.animate = true;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else if (frameState.time < start + duration) {
           var delta = 1 - easing((frameState.time - start) / duration);
@@ -158,7 +161,7 @@ ol.animation.zoom = function(options) {
               sourceResolution - frameState.viewState.resolution;
           frameState.animate = true;
           frameState.viewState.resolution += delta * deltaResolution;
-          frameState.viewHints[ol.ViewHint.ANIMATING] += 1;
+          frameState.viewHints[ol.View.Hint.ANIMATING] += 1;
           return true;
         } else {
           return false;
