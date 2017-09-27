@@ -1,9 +1,10 @@
 goog.provide('ol.source.UrlTile');
 
 goog.require('ol');
-goog.require('ol.Tile');
+goog.require('ol.TileState');
 goog.require('ol.TileUrlFunction');
 goog.require('ol.source.Tile');
+goog.require('ol.source.TileEventType');
 
 
 /**
@@ -11,6 +12,7 @@ goog.require('ol.source.Tile');
  * Base class for sources providing tiles divided into a tile grid over http.
  *
  * @constructor
+ * @abstract
  * @fires ol.source.Tile.Event
  * @extends {ol.source.Tile}
  * @param {ol.SourceUrlTileOptions} options Image tile options.
@@ -41,8 +43,8 @@ ol.source.UrlTile = function(options) {
    * @type {ol.TileUrlFunctionType}
    */
   this.tileUrlFunction = this.fixedTileUrlFunction ?
-      this.fixedTileUrlFunction.bind(this) :
-      ol.TileUrlFunction.nullTileUrlFunction;
+    this.fixedTileUrlFunction.bind(this) :
+    ol.TileUrlFunction.nullTileUrlFunction;
 
   /**
    * @protected
@@ -58,6 +60,12 @@ ol.source.UrlTile = function(options) {
   if (options.tileUrlFunction) {
     this.setTileUrlFunction(options.tileUrlFunction);
   }
+
+  /**
+   * @private
+   * @type {Object.<number, boolean>}
+   */
+  this.tileLoadingKeys_ = {};
 
 };
 ol.inherits(ol.source.UrlTile, ol.source.Tile);
@@ -108,21 +116,20 @@ ol.source.UrlTile.prototype.getUrls = function() {
  */
 ol.source.UrlTile.prototype.handleTileChange = function(event) {
   var tile = /** @type {ol.Tile} */ (event.target);
-  switch (tile.getState()) {
-    case ol.Tile.State.LOADING:
-      this.dispatchEvent(
-          new ol.source.Tile.Event(ol.source.Tile.EventType.TILELOADSTART, tile));
-      break;
-    case ol.Tile.State.LOADED:
-      this.dispatchEvent(
-          new ol.source.Tile.Event(ol.source.Tile.EventType.TILELOADEND, tile));
-      break;
-    case ol.Tile.State.ERROR:
-      this.dispatchEvent(
-          new ol.source.Tile.Event(ol.source.Tile.EventType.TILELOADERROR, tile));
-      break;
-    default:
-      // pass
+  var uid = ol.getUid(tile);
+  var tileState = tile.getState();
+  var type;
+  if (tileState == ol.TileState.LOADING) {
+    this.tileLoadingKeys_[uid] = true;
+    type = ol.source.TileEventType.TILELOADSTART;
+  } else if (uid in this.tileLoadingKeys_) {
+    delete this.tileLoadingKeys_[uid];
+    type = tileState == ol.TileState.ERROR ? ol.source.TileEventType.TILELOADERROR :
+      (tileState == ol.TileState.LOADED || tileState == ol.TileState.ABORT) ?
+        ol.source.TileEventType.TILELOADEND : undefined;
+  }
+  if (type != undefined) {
+    this.dispatchEvent(new ol.source.Tile.Event(type, tile));
   }
 };
 
@@ -158,27 +165,27 @@ ol.source.UrlTile.prototype.setTileUrlFunction = function(tileUrlFunction, opt_k
 /**
  * Set the URL to use for requests.
  * @param {string} url URL.
- * @api stable
+ * @api
  */
 ol.source.UrlTile.prototype.setUrl = function(url) {
   var urls = this.urls = ol.TileUrlFunction.expandUrl(url);
   this.setTileUrlFunction(this.fixedTileUrlFunction ?
-      this.fixedTileUrlFunction.bind(this) :
-      ol.TileUrlFunction.createFromTemplates(urls, this.tileGrid), url);
+    this.fixedTileUrlFunction.bind(this) :
+    ol.TileUrlFunction.createFromTemplates(urls, this.tileGrid), url);
 };
 
 
 /**
  * Set the URLs to use for requests.
  * @param {Array.<string>} urls URLs.
- * @api stable
+ * @api
  */
 ol.source.UrlTile.prototype.setUrls = function(urls) {
   this.urls = urls;
   var key = urls.join('\n');
   this.setTileUrlFunction(this.fixedTileUrlFunction ?
-      this.fixedTileUrlFunction.bind(this) :
-      ol.TileUrlFunction.createFromTemplates(urls, this.tileGrid), key);
+    this.fixedTileUrlFunction.bind(this) :
+    ol.TileUrlFunction.createFromTemplates(urls, this.tileGrid), key);
 };
 
 

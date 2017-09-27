@@ -2,9 +2,11 @@ goog.provide('ol.renderer.webgl.Layer');
 
 goog.require('ol');
 goog.require('ol.render.Event');
+goog.require('ol.render.EventType');
 goog.require('ol.render.webgl.Immediate');
 goog.require('ol.renderer.Layer');
 goog.require('ol.renderer.webgl.defaultmapshader');
+goog.require('ol.renderer.webgl.defaultmapshader.Locations');
 goog.require('ol.transform');
 goog.require('ol.vec.Mat4');
 goog.require('ol.webgl');
@@ -14,6 +16,7 @@ goog.require('ol.webgl.Context');
 
 /**
  * @constructor
+ * @abstract
  * @extends {ol.renderer.Layer}
  * @param {ol.renderer.webgl.Map} mapRenderer Map renderer.
  * @param {ol.layer.Layer} layer Layer.
@@ -109,7 +112,7 @@ ol.renderer.webgl.Layer.prototype.bindFramebuffer = function(frameState, framebu
     }.bind(null, gl, this.framebuffer, this.texture);
 
     frameState.postRenderFunctions.push(
-      /** @type {ol.PostRenderFunction} */ (postRenderFunction)
+        /** @type {ol.PostRenderFunction} */ (postRenderFunction)
     );
 
     var texture = ol.webgl.Context.createEmptyTexture(
@@ -139,7 +142,7 @@ ol.renderer.webgl.Layer.prototype.bindFramebuffer = function(frameState, framebu
 ol.renderer.webgl.Layer.prototype.composeFrame = function(frameState, layerState, context) {
 
   this.dispatchComposeEvent_(
-      ol.render.Event.Type.PRECOMPOSE, context, frameState);
+      ol.render.EventType.PRECOMPOSE, context, frameState);
 
   context.bindBuffer(ol.webgl.ARRAY_BUFFER, this.arrayBuffer_);
 
@@ -152,8 +155,7 @@ ol.renderer.webgl.Layer.prototype.composeFrame = function(frameState, layerState
 
   var locations;
   if (!this.defaultLocations_) {
-    locations =
-        new ol.renderer.webgl.defaultmapshader.Locations(gl, program);
+    locations = new ol.renderer.webgl.defaultmapshader.Locations(gl, program);
     this.defaultLocations_ = locations;
   } else {
     locations = this.defaultLocations_;
@@ -178,13 +180,13 @@ ol.renderer.webgl.Layer.prototype.composeFrame = function(frameState, layerState
   gl.drawArrays(ol.webgl.TRIANGLE_STRIP, 0, 4);
 
   this.dispatchComposeEvent_(
-      ol.render.Event.Type.POSTCOMPOSE, context, frameState);
+      ol.render.EventType.POSTCOMPOSE, context, frameState);
 
 };
 
 
 /**
- * @param {ol.render.Event.Type} type Event type.
+ * @param {ol.render.EventType} type Event type.
  * @param {ol.webgl.Context} context WebGL context.
  * @param {olx.FrameState} frameState Frame state.
  * @private
@@ -251,3 +253,16 @@ ol.renderer.webgl.Layer.prototype.handleWebGLContextLost = function() {
  * @return {boolean} whether composeFrame should be called.
  */
 ol.renderer.webgl.Layer.prototype.prepareFrame = function(frameState, layerState, context) {};
+
+
+/**
+ * @abstract
+ * @param {ol.Pixel} pixel Pixel.
+ * @param {olx.FrameState} frameState FrameState.
+ * @param {function(this: S, ol.layer.Layer, (Uint8ClampedArray|Uint8Array)): T} callback Layer
+ *     callback.
+ * @param {S} thisArg Value to use as `this` when executing `callback`.
+ * @return {T|undefined} Callback result.
+ * @template S,T,U
+ */
+ol.renderer.webgl.Layer.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg) {};

@@ -14,33 +14,12 @@ ol.color.HEX_COLOR_RE_ = /^#(?:[0-9a-f]{3}){1,2}$/i;
 
 
 /**
- * Regular expression for matching and capturing RGB style strings.
- * @const
- * @type {RegExp}
- * @private
- */
-ol.color.RGB_COLOR_RE_ =
-    /^(?:rgb)?\((0|[1-9]\d{0,2}),\s?(0|[1-9]\d{0,2}),\s?(0|[1-9]\d{0,2})\)$/i;
-
-
-/**
- * Regular expression for matching and capturing RGBA style strings.
- * @const
- * @type {RegExp}
- * @private
- */
-ol.color.RGBA_COLOR_RE_ =
-    /^(?:rgba)?\((0|[1-9]\d{0,2}),\s?(0|[1-9]\d{0,2}),\s?(0|[1-9]\d{0,2}),\s?(0|1|0\.\d{0,10})\)$/i;
-
-
-/**
  * Regular expression for matching potential named color style strings.
  * @const
  * @type {RegExp}
  * @private
  */
-ol.color.NAMED_COLOR_RE_ =
-    /^([a-z]*)$/i;
+ol.color.NAMED_COLOR_RE_ = /^([a-z]*)$/i;
 
 
 /**
@@ -93,56 +72,56 @@ ol.color.fromNamed = function(color) {
  * @return {ol.Color} Color.
  */
 ol.color.fromString = (
-    function() {
+  function() {
 
-      // We maintain a small cache of parsed strings.  To provide cheap LRU-like
-      // semantics, whenever the cache grows too large we simply delete an
-      // arbitrary 25% of the entries.
+    // We maintain a small cache of parsed strings.  To provide cheap LRU-like
+    // semantics, whenever the cache grows too large we simply delete an
+    // arbitrary 25% of the entries.
 
+    /**
+     * @const
+     * @type {number}
+     */
+    var MAX_CACHE_SIZE = 1024;
+
+    /**
+     * @type {Object.<string, ol.Color>}
+     */
+    var cache = {};
+
+    /**
+     * @type {number}
+     */
+    var cacheSize = 0;
+
+    return (
       /**
-       * @const
-       * @type {number}
+       * @param {string} s String.
+       * @return {ol.Color} Color.
        */
-      var MAX_CACHE_SIZE = 1024;
-
-      /**
-       * @type {Object.<string, ol.Color>}
-       */
-      var cache = {};
-
-      /**
-       * @type {number}
-       */
-      var cacheSize = 0;
-
-      return (
-          /**
-           * @param {string} s String.
-           * @return {ol.Color} Color.
-           */
-          function(s) {
-            var color;
-            if (cache.hasOwnProperty(s)) {
-              color = cache[s];
-            } else {
-              if (cacheSize >= MAX_CACHE_SIZE) {
-                var i = 0;
-                var key;
-                for (key in cache) {
-                  if ((i++ & 3) === 0) {
-                    delete cache[key];
-                    --cacheSize;
-                  }
-                }
+      function(s) {
+        var color;
+        if (cache.hasOwnProperty(s)) {
+          color = cache[s];
+        } else {
+          if (cacheSize >= MAX_CACHE_SIZE) {
+            var i = 0;
+            var key;
+            for (key in cache) {
+              if ((i++ & 3) === 0) {
+                delete cache[key];
+                --cacheSize;
               }
-              color = ol.color.fromStringInternal_(s);
-              cache[s] = color;
-              ++cacheSize;
             }
-            return color;
-          });
+          }
+          color = ol.color.fromStringInternal_(s);
+          cache[s] = color;
+          ++cacheSize;
+        }
+        return color;
+      });
 
-    })();
+  })();
 
 
 /**
@@ -151,7 +130,7 @@ ol.color.fromString = (
  * @return {ol.Color} Color.
  */
 ol.color.fromStringInternal_ = function(s) {
-  var r, g, b, a, color, match;
+  var r, g, b, a, color, parts;
 
   if (ol.color.NAMED_COLOR_RE_.exec(s)) {
     s = ol.color.fromNamed(s);
@@ -171,17 +150,13 @@ ol.color.fromStringInternal_ = function(s) {
     }
     a = 1;
     color = [r, g, b, a];
-  } else if ((match = ol.color.RGBA_COLOR_RE_.exec(s))) { // rgba()
-    r = Number(match[1]);
-    g = Number(match[2]);
-    b = Number(match[3]);
-    a = Number(match[4]);
-    color = ol.color.normalize([r, g, b, a]);
-  } else if ((match = ol.color.RGB_COLOR_RE_.exec(s))) { // rgb()
-    r = Number(match[1]);
-    g = Number(match[2]);
-    b = Number(match[3]);
-    color = ol.color.normalize([r, g, b, 1]);
+  } else if (s.indexOf('rgba(') == 0) { // rgba()
+    parts = s.slice(5, -1).split(',').map(Number);
+    color = ol.color.normalize(parts);
+  } else if (s.indexOf('rgb(') == 0) { // rgb()
+    parts = s.slice(4, -1).split(',').map(Number);
+    parts.push(1);
+    color = ol.color.normalize(parts);
   } else {
     ol.asserts.assert(false, 14); // Invalid color
   }

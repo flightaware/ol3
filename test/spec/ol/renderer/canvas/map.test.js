@@ -1,4 +1,4 @@
-goog.provide('ol.test.renderer.canvas.Map');
+
 
 goog.require('ol');
 goog.require('ol.Feature');
@@ -10,7 +10,8 @@ goog.require('ol.layer.Vector');
 goog.require('ol.renderer.canvas.Layer');
 goog.require('ol.renderer.canvas.Map');
 goog.require('ol.source.Vector');
-
+goog.require('ol.style.Icon');
+goog.require('ol.style.Style');
 
 describe('ol.renderer.canvas.Map', function() {
 
@@ -30,18 +31,27 @@ describe('ol.renderer.canvas.Map', function() {
 
     var layer, map, target;
 
-    beforeEach(function() {
+    beforeEach(function(done) {
       target = document.createElement('div');
       target.style.width = '100px';
       target.style.height = '100px';
       document.body.appendChild(target);
       map = new ol.Map({
+        pixelRatio: 1,
         target: target,
         view: new ol.View({
           center: [0, 0],
           zoom: 0
         })
       });
+
+      // 1 x 1 pixel black icon
+      var img = document.createElement('img');
+      img.onload = function() {
+        done();
+      };
+      img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNiAAAABgADNjd8qAAAAABJRU5ErkJggg==';
+
       layer = new ol.layer.Vector({
         source: new ol.source.Vector({
           features: [
@@ -49,6 +59,12 @@ describe('ol.renderer.canvas.Map', function() {
               geometry: new ol.geom.Point([0, 0])
             })
           ]
+        }),
+        style: new ol.style.Style({
+          image: new ol.style.Icon({
+            img: img,
+            imgSize: [1, 1]
+          })
         })
       });
     });
@@ -97,10 +113,11 @@ describe('ol.renderer.canvas.Map', function() {
       map.addLayer(layer);
       map.renderSync();
       var cb = sinon.spy();
-      map.forEachFeatureAtPixel(map.getPixelFromCoordinate([0, 0]), cb, null,
-          function() {
-            return false;
-          });
+      map.forEachFeatureAtPixel(map.getPixelFromCoordinate([0, 0]), cb, {
+        layerFilter: function() {
+          return false;
+        }
+      });
       expect(cb).to.not.be.called();
     });
 
@@ -113,6 +130,39 @@ describe('ol.renderer.canvas.Map', function() {
       }).to.not.throwException();
     });
 
+    it('calls callback for clicks inside of the hitTolerance', function() {
+      map.addLayer(layer);
+      map.renderSync();
+      var cb1 = sinon.spy();
+      var cb2 = sinon.spy();
+
+      var pixel = map.getPixelFromCoordinate([0, 0]);
+
+      var pixelsInside = [
+        [pixel[0] + 9, pixel[1]],
+        [pixel[0] - 9, pixel[1]],
+        [pixel[0], pixel[1] + 9],
+        [pixel[0], pixel[1] - 9]
+      ];
+
+      var pixelsOutside = [
+        [pixel[0] + 9, pixel[1] + 9],
+        [pixel[0] - 9, pixel[1] + 9],
+        [pixel[0] + 9, pixel[1] - 9],
+        [pixel[0] - 9, pixel[1] - 9]
+      ];
+
+      for (var i = 0; i < 4; i++) {
+        map.forEachFeatureAtPixel(pixelsInside[i], cb1, {hitTolerance: 10});
+      }
+      expect(cb1.callCount).to.be(4);
+      expect(cb1.firstCall.args[1]).to.be(layer);
+
+      for (var j = 0; j < 4; j++) {
+        map.forEachFeatureAtPixel(pixelsOutside[j], cb2, {hitTolerance: 10});
+      }
+      expect(cb2).not.to.be.called();
+    });
   });
 
   describe('#renderFrame()', function() {

@@ -1,5 +1,294 @@
 ## Upgrade notes
 
+### Next Release
+
+#### Minor change for custom `tileLoadFunction` with `ol.source.VectorTile`
+
+It is no longer necessary to set the projection on the tile. Instead, the `readFeatures` method must be called with the tile's extent as `extent` option and the view's projection as `featureProjection`.
+
+Before:
+```js
+tile.setLoader(function() {
+  var data = // ... fetch data
+  var format = tile.getFormat();
+  tile.setFeatures(format.readFeatures(data));
+  tile.setProjection(format.readProjection(data));
+  // uncomment the line below for ol.format.MVT only
+  //tile.setExtent(format.getLastExtent());
+});
+```
+
+After:
+```js
+tile.setLoader(function() {
+  var data = // ... fetch data
+  var format = tile.getFormat();
+  tile.setFeatures(format.readFeatures(data, {
+    featureProjection: map.getView().getProjection(),
+    // uncomment the line below for ol.format.MVT only
+    //extent: tile.getExtent()
+  }));
+);
+```
+
+#### Deprecation of `ol.DeviceOrientation`
+
+`ol.DeviceOrientation` is deprecated and will be removed in the next major version.
+The device-orientation example has been updated to use the (gyronorm.js)[https://github.com/dorukeker/gyronorm.js] library.
+
+
+### v4.3.0
+
+#### `ol.source.VectorTile` no longer requires a `tileGrid` option
+
+By default, the `ol.source.VectorTile` constructor creates an XYZ tile grid (in Web Mercator) for 512 pixel tiles and assumes a max zoom level of 22.  If you were creating a vector tile source with an explicit `tileGrid` option, you can now remove this.
+
+Before:
+```js
+var source = new ol.source.VectorTile({
+  tileGrid: ol.tilegrid.createXYZ({tileSize: 512, maxZoom: 22}),
+  url: url
+});
+```
+
+After:
+```js
+var source = new ol.source.VectorTile({
+  url: url
+});
+```
+
+If you need to change the max zoom level, you can pass the source a `maxZoom` option.  If you need to change the tile size, you can pass the source a `tileSize` option.  If you need a completely custom tile grid, you can still pass the source a `tileGrid` option.
+
+#### `ol.interaction.Modify` deletes with `alt` key only
+
+To delete features with the modify interaction, press the `alt` key while clicking on an existing vertex.  If you want to configure the modify interaction with a different delete condition, use the `deleteCondition` option.  For example, to allow deletion on a single click with no modifier keys, configure the interaction like this:
+```js
+var interaction = new ol.interaction.Modify({
+  source: source,
+  deleteCondition: function(event) {
+    return ol.events.condition.noModifierKeys(event) && ol.events.condition.singleClick(event);
+  }
+});
+```
+
+The motivation for this change is to make the modify, draw, and snap interactions all work well together.  Previously, the use of these interactions with the default configuration would make it so you couldn't reliably add new vertices (click with no modifier) and delete existing vertices (click with no modifier).
+
+#### `ol.source.VectorTile` no longer has a `tilePixelRatio` option
+
+The `tilePixelRatio` option was only used for tiles in projections with `tile-pixels` as units. For tiles read with `ol.format.MVT` and the default tile loader, or tiles with the default pixel size of 4096 pixels, no changes are necessary. For the very rare cases that do not fall under these categories, a custom `tileLoadFunction` now needs to be configured on the `ol.source.VectorTile`. In addition to calling `tile.setFeatures()` and `tile.setProjection()`, it also needs to contain code like the following:
+```js
+var extent = tile.getFormat() instanceof ol.format.MVT ?
+  tile.getLastExtent() :
+  [0, 0, tilePixelRatio * tileSize, tilePixelRatio * tileSize];
+tile.setExtent(extent);
+```
+
+#### `ol.animate` now takes the shortest arc for rotation animation
+
+Usually rotation animations should animate along the shortest arc. There are rare occasions where a spinning animation effect is desired. So if you previously had something like
+```js
+map.getView().animate({
+  rotation: 2 * Math.PI,
+  duration: 2000
+});
+```
+we recommend to split the animation into two parts and use different easing functions. The code below results in the same effect as the snippet above did with previous versions:
+```js
+map.getView().animate({
+  rotation: Math.PI,
+  easing: ol.easing.easeIn
+}, {
+  rotation: 2 * Math.PI,
+  easing: ol.easing.easeOut
+});
+```
+
+### v4.2.0
+
+#### Return values of two `ol.style.RegularShape` getters have changed
+
+To provide a more consistent behaviour the following getters now return the same value that was given to constructor:
+
+`ol.style.RegularShape#getPoints` does not return the double amount of points anymore if a radius2 is set.
+
+`ol.style.RegularShape#getRadius2` will return `undefined` if no radius2 is set.
+
+### v4.1.0
+
+#### Adding duplicate layers to a map throws
+
+Previously, you could do this:
+```js
+map.addLayer(layer);
+map.addLayer(layer);
+```
+
+However, after adding a duplicate layer, things failed if you tried to remove that layer.
+
+Now, `map.addLayer()` throws if you try adding a layer that has already been added to the map.
+
+#### Simpler `constrainResolution` configuration
+
+The `constrainResolution` configuration for `ol.interaction.PinchZoom` and `ol.interaction.MouseWheelZoom`
+can now be set directly with an option in `ol.interaction.defaults`:
+```js
+ol.interaction.defaults({
+  constrainResolution: true
+});
+```
+
+### v4.0.0
+
+#### Simpler `ol.source.Zoomify` `url` configuration
+
+Instead specifying a base url, the `url` for the `ol.source.Zoomify` source can now be a template.  The `{TileGroup}`, `{x}`, `{y}`, `{z}` and placeholders must be included in the `url` in this case. the `url` can now also include subdomain placeholders:
+```js
+new ol.source.Zoomify({
+  url: 'https://{a-f}.example.com/cgi-bin/iipsrv.fcgi?zoomify=/a/b/{TileGroup}/{z}-{x}-{y}.jpg'
+});
+```
+
+#### Removal of deprecated methods
+
+The deprecated `ol.animation` functions and `map.beforeRender()` method have been removed.  Use `view.animate()` instead.
+
+The `unByKey()` method has been removed from `ol.Observable` instances.  Use the `ol.Observable.unByKey()` static function instead.
+```js
+var key = map.on('moveend', function() { ...});
+map.unByKey(key);
+```
+New code:
+```js
+var key = map.on('moveend', function() { ...});
+ol.Observable.unByKey(key);
+```
+
+#### Simplified `ol.View#fit()` API
+
+In most cases, it is no longer necessary to provide an `ol.Size` (previously the 2nd argument) to `ol.View#fit()`. By default, the size of the first map that uses the view will be used. If you want to specify a different size, it goes in the options now (previously the 3rd argument, now the 2nd).
+
+Most common use case - old API:
+```js
+map.getView().fit(extent, map.getSize());
+```
+Most common use case - new API:
+```js
+map.getView().fit(extent);
+```
+Advanced use - old API:
+```js
+map.getView().fit(extent, [200, 100], {padding: 10});
+```
+Advanced use - new API:
+```js
+map.getView().fit(extent, {size: [200, 100], padding 10});
+```
+
+#### Removed build flags (`@define`)
+
+The `ol.DEBUG`, `ol.ENABLE_TILE`, `ol.ENABLE_IMAGE`, `ol.ENABLE_VECTOR`, and `ol.ENABLE_VECTOR_TILE` build flags are no longer necessary and have been removed.  If you were using these in a `define` array for a custom build, you can remove them.
+
+If you leave `ol.ENABLE_WEBGL` set to `true` in your build, you should set `ol.DEBUG_WEBGL` to `false` to avoid including debuggable shader sources.
+
+
+### v3.20.0
+
+#### Use `view.animate()` instead of `map.beforeRender()` and `ol.animation` functions
+
+The `map.beforeRender()` and `ol.animation` functions have been deprecated in favor of a new `view.animate()` function.  Use of the deprecated functions will result in a warning during development.  These functions are subject to removal in an upcoming release.
+
+For details on the `view.animate()` method, see the API docs and the view animation example.  Upgrading should be relatively straightforward.  For example, if you wanted to have an animated pan, zoom, and rotation previously, you might have done this:
+
+```js
+var zoom = ol.animation.zoom({
+  resolution: view.getResolution()
+});
+var pan = ol.animation.pan({
+  source: view.getCenter()
+});
+var rotate = ol.animation.rotate({
+  rotation: view.getRotation()
+});
+
+map.beforeRender(zoom, pan, rotate);
+
+map.setZoom(1);
+map.setCenter([0, 0]);
+map.setRotation(Math.PI);
+```
+
+Now, the same can be accomplished with this:
+```js
+view.animate({
+  zoom: 1,
+  center: [0, 0],
+  rotation: Math.PI
+});
+```
+
+#### `ol.Map#forEachFeatureAtPixel` and `ol.Map#hasFeatureAtPixel` parameters have changed
+
+If you are using the layer filter of one of these methods, please note that you now have to pass in the layer filter via an `ol.AtPixelOptions` object. If you are not using the layer filter the usage has not changed.
+
+Old syntax:
+```js
+map.forEachFeatureAtPixel(pixel, callback, callbackThis, layerFilterFn, layerFilterThis);
+
+map.hasFeatureAtPixel(pixel, layerFilterFn, layerFilterThis);
+```
+
+New syntax:
+```js
+map.forEachFeatureAtPixel(pixel, callback.bind(callbackThis), {
+  layerFilter: layerFilterFn.bind(layerFilterThis)
+});
+
+map.hasFeatureAtPixel(pixel, {
+  layerFilter: layerFilterFn.bind(layerFilterThis)
+});
+```
+
+This change is due to the introduction of the `hitTolerance` parameter which can be passed in via this `ol.AtPixelOptions` object, too.
+
+#### Use `ol.proj.getPointResolution()` instead of `projection.getPointResolution()`
+
+The experimental `getPointResolution` method has been removed from `ol.Projection` instances.  Since the implementation of this method required an inverse transform (function for transforming projected coordinates to geographic coordinates) and `ol.Projection` instances are not constructed with forward or inverse transforms, it does not make sense that a projection instance can always calculate the point resolution.
+
+As a substitute for the `projection.getPointResolution()` function, a `ol.proj.getPointResolution()` function has been added.  To upgrade, you will need to change things like this:
+```js
+projection.getPointResolution(resolution, point);
+```
+
+into this:
+```js
+ol.proj.getPointResolution(projection, resolution, point);
+```
+
+Note that if you were previously creating a projection with a `getPointResolution` function in the constructor (or calling `projection.setGetPointResolution()` after construction), this function will be used by `ol.proj.getPointResolution()`.
+
+#### `ol.interaction.PinchZoom` no longer zooms to a whole-number zoom level after the gesture ends
+
+The old behavior of `ol.interaction.PinchZoom` was to zoom to the next integer zoom level after the user ends the gesture.
+
+Now the pinch zoom keeps the user selected zoom level even if it is a fractional zoom.
+
+To get the old behavior set the new `constrainResolution` parameter to `true` like this:
+```js
+new ol.interaction.PinchZoom({constrainResolution: true})
+```
+
+See the new `pinch-zoom` example for a complete implementation.
+
+### v3.19.1
+
+#### `ol.style.Fill` with `CanvasGradient` or `CanvasPattern`
+
+The origin for gradients and patterns has changed from `[0, 0]` to the top-left
+corner of the extent of the geometry being filled.
+
+### v3.19.0
+
 #### `ol.style.Fill` with `CanvasGradient` or `CanvasPattern`
 
 Previously, gradients and patterns were aligned with the canvas, so they did not
@@ -70,7 +359,7 @@ The DOM renderer has been removed.  Instead, the Canvas renderer should be used.
 
 #### Changes in the way assertions are handled
 
-Previously, minified builds of the library did not have any assertions. This caused applications to fail silently or with cryptic stack traces. Starting with this release, developers get notified of many runtime errors through the new `ol.AssertionError`. This error has a `code` property. The meaning of the code can be found on http://openlayers.org/en/latest/doc/errors/. There are additional console assertion checks in debug mode when the `goog.DEBUG` compiler flag is `true`. As this is `true` by default, it is recommended that those creating custom builds set this to `false` so these assertions are stripped.'
+Previously, minified builds of the library did not have any assertions. This caused applications to fail silently or with cryptic stack traces. Starting with this release, developers get notified of many runtime errors through the new `ol.AssertionError`. This error has a `code` property. The meaning of the code can be found on https://openlayers.org/en/latest/doc/errors/. There are additional console assertion checks in debug mode when the `goog.DEBUG` compiler flag is `true`. As this is `true` by default, it is recommended that those creating custom builds set this to `false` so these assertions are stripped.'
 
 #### Removal of `ol.ENABLE_NAMED_COLORS`
 
@@ -106,7 +395,7 @@ A number of internal types have been renamed.  This will not affect those who us
 
 #### `ol.source.MapQuest` removal
 
-Because of changes at MapQuest (see: https://lists.openstreetmap.org/pipermail/talk/2016-June/076106.html) we had to remove the MapQuest source for now (see https://github.com/openlayers/ol3/issues/5484 for details).
+Because of changes at MapQuest (see: https://lists.openstreetmap.org/pipermail/talk/2016-June/076106.html) we had to remove the MapQuest source for now (see https://github.com/openlayers/openlayers/issues/5484 for details).
 
 #### `ol.interaction.ModifyEvent` changes
 
@@ -179,7 +468,7 @@ var v3source = new ol.source.TileUTFGrid({
 
 #### Internet Explorer 9 support
 
-As of this release, OpenLayers requires a `classList` polyfill for IE 9 support. See http://cdn.polyfill.io/v2/docs/features#Element_prototype_classList.
+As of this release, OpenLayers requires a `classList` polyfill for IE 9 support. See https://cdn.polyfill.io/v2/docs/features#Element_prototype_classList.
 
 #### Immediate rendering API
 
@@ -228,7 +517,7 @@ The default cache size is `2048`.
 
 #### Internet Explorer 9 support
 
-As of this release, OpenLayers requires a `requestAnimationFrame`/`cancelAnimationFrame` polyfill for IE 9 support. See http://cdn.polyfill.io/v2/docs/features/#requestAnimationFrame.
+As of this release, OpenLayers requires a `requestAnimationFrame`/`cancelAnimationFrame` polyfill for IE 9 support. See https://cdn.polyfill.io/v2/docs/features/#requestAnimationFrame.
 
 #### Layer pre-/postcompose event changes
 
@@ -487,7 +776,7 @@ When single clicking a line or boundary within the `pixelTolerance`, a vertex is
 #### `ol.interaction.Draw` changes
 
 * The `minPointsPerRing` config option has been renamed to `minPoints`. It is now also available for linestring drawing, not only for polygons.
-* The `ol.DrawEvent` and `ol.DrawEventType` types were renamed to `ol.interaction.DrawEvent` and `ol.interaction.DrawEventType`. This has an impact on your code only if your code is compiled together with ol3.
+* The `ol.DrawEvent` and `ol.DrawEventType` types were renamed to `ol.interaction.DrawEvent` and `ol.interaction.DrawEventType`. This has an impact on your code only if your code is compiled together with OpenLayers.
 
 #### `ol.tilegrid` changes
 
@@ -501,7 +790,7 @@ now specify an `extent` instead of `widths`. These settings are used to restrict
 
 #### `ol.Object` and `bindTo`
 
-* The following experimental methods have been removed from `ol.Object`: `bindTo`, `unbind`, and `unbindAll`.  If you want to get notification about `ol.Object` property changes, you can listen for the `'propertychange'` event (e.g. `object.on('propertychange', listener)`).  Two-way binding can be set up at the application level using property change listeners.  See [#3472](https://github.com/openlayers/ol3/pull/3472) for details on the change.
+* The following experimental methods have been removed from `ol.Object`: `bindTo`, `unbind`, and `unbindAll`.  If you want to get notification about `ol.Object` property changes, you can listen for the `'propertychange'` event (e.g. `object.on('propertychange', listener)`).  Two-way binding can be set up at the application level using property change listeners.  See [#3472](https://github.com/openlayers/openlayers/pull/3472) for details on the change.
 
 * The experimental `ol.dom.Input` component has been removed.  If you need to synchronize the state of a dom Input element with an `ol.Object`, this can be accomplished using listeners for change events.  For example, you might bind the state of a checkbox type input with a layer's visibility like this:
 
@@ -546,7 +835,7 @@ now specify an `extent` instead of `widths`. These settings are used to restrict
   });
   ```
 
-  See http://openlayers.org/en/master/examples/vector-layer.html for a real example.
+  See https://openlayers.org/en/master/examples/vector-layer.html for a real example.
 
   Note that you no longer need to set a `projection` on the source!
 
@@ -568,7 +857,7 @@ now specify an `extent` instead of `widths`. These settings are used to restrict
 
   The above code uses jQuery to send an Ajax request, but you can obviously use any Ajax library.
 
-  See http://openlayers.org/en/master/examples/igc.html for a real example.
+  See https://openlayers.org/en/master/examples/igc.html for a real example.
 
 * Note about KML
 
@@ -626,9 +915,9 @@ now specify an `extent` instead of `widths`. These settings are used to restrict
   });
   ```
 
-  See http://openlayers.org/en/master/examples/vector-osm.html for a real example.
+  See https://openlayers.org/en/master/examples/vector-osm.html for a real example.
 
-* The experimental `ol.loadingstrategy.createTile` function has been renamed to `ol.loadingstrategy.tile`. The signature of the function hasn't changed. See http://openlayers.org/en/master/examples/vector-osm.html for an example.
+* The experimental `ol.loadingstrategy.createTile` function has been renamed to `ol.loadingstrategy.tile`. The signature of the function hasn't changed. See https://openlayers.org/en/master/examples/vector-osm.html for an example.
 
 #### Change to `ol.style.Icon`
 
@@ -654,7 +943,7 @@ There should be nothing special required when upgrading from v3.3.0 to v3.4.0.
 
 ### v3.3.0
 
-* The `ol.events.condition.mouseMove` function was replaced by `ol.events.condition.pointerMove` (see [#3281](https://github.com/openlayers/ol3/pull/3281)). For example, if you use `ol.events.condition.mouseMove` as the condition in a `Select` interaction then you now need to use `ol.events.condition.pointerMove`:
+* The `ol.events.condition.mouseMove` function was replaced by `ol.events.condition.pointerMove` (see [#3281](https://github.com/openlayers/openlayers/pull/3281)). For example, if you use `ol.events.condition.mouseMove` as the condition in a `Select` interaction then you now need to use `ol.events.condition.pointerMove`:
 
   ```js
   var selectInteraction = new ol.interaction.Select({

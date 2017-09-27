@@ -3,12 +3,14 @@ goog.provide('ol.render.Feature');
 goog.require('ol');
 goog.require('ol.extent');
 goog.require('ol.geom.GeometryType');
+goog.require('ol.geom.flat.transform');
+goog.require('ol.transform');
 
 
 /**
  * Lightweight, read-only, {@link ol.Feature} and {@link ol.geom.Geometry} like
- * structure, optimized for rendering and styling. Geometry access through the
- * API is limited to getting the type and extent of the geometry.
+ * structure, optimized for vector tile rendering and styling. Geometry access
+ * through the API is limited to getting the type and extent of the geometry.
  *
  * @constructor
  * @param {ol.geom.GeometryType} type Geometry type.
@@ -16,21 +18,20 @@ goog.require('ol.geom.GeometryType');
  *     to be right-handed for polygons.
  * @param {Array.<number>|Array.<Array.<number>>} ends Ends or Endss.
  * @param {Object.<string, *>} properties Properties.
+ * @param {number|string|undefined} id Feature id.
  */
-ol.render.Feature = function(type, flatCoordinates, ends, properties) {
-
+ol.render.Feature = function(type, flatCoordinates, ends, properties, id) {
   /**
    * @private
    * @type {ol.Extent|undefined}
    */
   this.extent_;
 
-  ol.DEBUG && console.assert(type === ol.geom.GeometryType.POINT ||
-      type === ol.geom.GeometryType.MULTI_POINT ||
-      type === ol.geom.GeometryType.LINE_STRING ||
-      type === ol.geom.GeometryType.MULTI_LINE_STRING ||
-      type === ol.geom.GeometryType.POLYGON,
-      'Need a Point, MultiPoint, LineString, MultiLineString or Polygon type');
+  /**
+   * @private
+   * @type {number|string|undefined}
+   */
+  this.id_ = id;
 
   /**
    * @private
@@ -56,6 +57,12 @@ ol.render.Feature = function(type, flatCoordinates, ends, properties) {
    */
   this.properties_ = properties;
 
+
+  /**
+   * @private
+   * @type {ol.Transform}
+   */
+  this.tmpTransform_ = ol.transform.create();
 };
 
 
@@ -73,7 +80,8 @@ ol.render.Feature.prototype.get = function(key) {
 /**
  * @return {Array.<number>|Array.<Array.<number>>} Ends or endss.
  */
-ol.render.Feature.prototype.getEnds = function() {
+ol.render.Feature.prototype.getEnds =
+ol.render.Feature.prototype.getEndss = function() {
   return this.ends_;
 };
 
@@ -86,12 +94,22 @@ ol.render.Feature.prototype.getEnds = function() {
 ol.render.Feature.prototype.getExtent = function() {
   if (!this.extent_) {
     this.extent_ = this.type_ === ol.geom.GeometryType.POINT ?
-        ol.extent.createOrUpdateFromCoordinate(this.flatCoordinates_) :
-        ol.extent.createOrUpdateFromFlatCoordinates(
-            this.flatCoordinates_, 0, this.flatCoordinates_.length, 2);
+      ol.extent.createOrUpdateFromCoordinate(this.flatCoordinates_) :
+      ol.extent.createOrUpdateFromFlatCoordinates(
+          this.flatCoordinates_, 0, this.flatCoordinates_.length, 2);
 
   }
   return this.extent_;
+};
+
+/**
+ * Get the feature identifier.  This is a stable identifier for the feature and
+ * is set when reading data from a remote source.
+ * @return {number|string|undefined} Id.
+ * @api
+ */
+ol.render.Feature.prototype.getId = function() {
+  return this.id_;
 };
 
 
@@ -111,7 +129,8 @@ ol.render.Feature.prototype.getFlatCoordinates =
 
 
 /**
- * Get the feature for working with its geometry.
+ * For API compatibility with {@link ol.Feature}, this method is useful when
+ * determining the geometry type in style function (see {@link #getType}).
  * @return {ol.render.Feature} Feature.
  * @api
  */
@@ -159,4 +178,24 @@ ol.render.Feature.prototype.getStyleFunction = ol.nullFunction;
  */
 ol.render.Feature.prototype.getType = function() {
   return this.type_;
+};
+
+/**
+ * Transform geometry coordinates from tile pixel space to projected.
+ * The SRS of the source and destination are expected to be the same.
+ *
+ * @param {ol.ProjectionLike} source The current projection
+ * @param {ol.ProjectionLike} destination The desired projection.
+ */
+ol.render.Feature.prototype.transform = function(source, destination) {
+  var pixelExtent = source.getExtent();
+  var projectedExtent = source.getWorldExtent();
+  var scale = ol.extent.getHeight(projectedExtent) / ol.extent.getHeight(pixelExtent);
+  var transform = this.tmpTransform_;
+  ol.transform.compose(transform,
+      projectedExtent[0], projectedExtent[3],
+      scale, -scale, 0,
+      0, 0);
+  ol.geom.flat.transform.transform2D(this.flatCoordinates_, 0, this.flatCoordinates_.length, 2,
+      transform, this.flatCoordinates_);
 };

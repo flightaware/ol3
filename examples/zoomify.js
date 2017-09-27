@@ -1,43 +1,52 @@
 goog.require('ol.Map');
 goog.require('ol.View');
 goog.require('ol.layer.Tile');
-goog.require('ol.proj.Projection');
 goog.require('ol.source.Zoomify');
 
 var imgWidth = 9911;
 var imgHeight = 6100;
 
-var imgCenter = [imgWidth / 2, -imgHeight / 2];
+var zoomifyUrl = 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?zoomify=' +
+    '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF/';
+var iipUrl = 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?FIF=' + '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF' +  '&JTL={z},{tileIndex}';
 
-// Maps always need a projection, but Zoomify layers are not geo-referenced, and
-// are only measured in pixels.  So, we create a fake projection that the map
-// can use to properly display the layer.
-var proj = new ol.proj.Projection({
-  code: 'ZOOMIFY',
-  units: 'pixels',
-  extent: [0, 0, imgWidth, imgHeight]
+var layer = new ol.layer.Tile({
+  source: new ol.source.Zoomify({
+    url: zoomifyUrl,
+    size: [imgWidth, imgHeight],
+    crossOrigin: 'anonymous'
+  })
 });
 
-var source = new ol.source.Zoomify({
-  url: 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?zoomify=' +
-      '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF/',
-  size: [imgWidth, imgHeight],
-  crossOrigin: 'anonymous'
-});
+var extent = [0, -imgHeight, imgWidth, 0];
 
 var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: source
-    })
-  ],
+  layers: [layer],
   target: 'map',
   view: new ol.View({
-    projection: proj,
-    center: imgCenter,
-    zoom: 2,
-    // constrain the center: center cannot be set outside
-    // this extent
-    extent: [0, -imgHeight, imgWidth, 0]
+    // adjust zoom levels to those provided by the source
+    resolutions: layer.getSource().getTileGrid().getResolutions(),
+    // constrain the center: center cannot be set outside this extent
+    extent: extent
   })
+});
+map.getView().fit(extent);
+
+var control = document.getElementById('zoomifyProtocol');
+control.addEventListener('change', function(event) {
+  var value = event.currentTarget.value;
+  if (value === 'iip') {
+    layer.setSource(new ol.source.Zoomify({
+      url: iipUrl,
+      size: [imgWidth, imgHeight],
+      crossOrigin: 'anonymous'
+    }));
+  } else if (value === 'zoomify') {
+    layer.setSource(new ol.source.Zoomify({
+      url: zoomifyUrl,
+      size: [imgWidth, imgHeight],
+      crossOrigin: 'anonymous'
+    }));
+  }
+
 });

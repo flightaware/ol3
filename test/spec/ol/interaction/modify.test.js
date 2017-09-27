@@ -1,12 +1,13 @@
-goog.provide('ol.test.interaction.Modify');
 
-goog.require('ol.events');
+
 goog.require('ol.Collection');
 goog.require('ol.Feature');
 goog.require('ol.Map');
 goog.require('ol.MapBrowserPointerEvent');
 goog.require('ol.View');
+goog.require('ol.events');
 goog.require('ol.events.condition');
+goog.require('ol.geom.Circle');
 goog.require('ol.geom.LineString');
 goog.require('ol.geom.Point');
 goog.require('ol.geom.Polygon');
@@ -74,19 +75,20 @@ describe('ol.interaction.Modify', function() {
    * @param {string} type Event type.
    * @param {number} x Horizontal offset from map center.
    * @param {number} y Vertical offset from map center.
-   * @param {boolean=} opt_shiftKey Shift key is pressed.
+   * @param {Object} modifiers Lookup of modifier keys.
    * @param {number} button The mouse button.
    */
-  function simulateEvent(type, x, y, opt_shiftKey, button) {
+  function simulateEvent(type, x, y, modifiers, button) {
+    modifiers = modifiers || {};
     var viewport = map.getViewport();
     // calculated in case body has top < 0 (test runner with small window)
     var position = viewport.getBoundingClientRect();
-    var shiftKey = opt_shiftKey !== undefined ? opt_shiftKey : false;
     var pointerEvent = new ol.pointer.PointerEvent(type, {
       type: type,
       clientX: position.left + x + width / 2,
       clientY: position.top + y + height / 2,
-      shiftKey: shiftKey
+      shiftKey: modifiers.shift || false,
+      altKey: modifiers.alt || false
     }, {
       button: button,
       isPrimary: true
@@ -140,7 +142,7 @@ describe('ol.interaction.Modify', function() {
     // make sure we get change events to events array
     expect(events.length > 2).to.be(true);
     // middle events should be feature modification events
-    for (var i = 1; i < events.length - 2; i++) {
+    for (var i = 1; i < events.length - 1; i++) {
       expect(events[i]).to.equal('change');
     }
 
@@ -177,6 +179,16 @@ describe('ol.interaction.Modify', function() {
       expect(rbushEntries[0].feature).to.be(feature);
     });
 
+    it('accepts a source', function() {
+      var feature = new ol.Feature(
+          new ol.geom.Point([0, 0]));
+      var source = new ol.source.Vector({features: [feature]});
+      var modify = new ol.interaction.Modify({source: source});
+      var rbushEntries = modify.rBush_.getAll();
+      expect(rbushEntries.length).to.be(1);
+      expect(rbushEntries[0].feature).to.be(feature);
+    });
+
   });
 
   describe('vertex deletion', function() {
@@ -201,10 +213,10 @@ describe('ol.interaction.Modify', function() {
       expect(second.getGeometry().getRevision()).to.equal(secondRevision);
       expect(second.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 10, -20, false, 0);
-      simulateEvent('pointerup', 10, -20, false, 0);
-      simulateEvent('click', 10, -20, false, 0);
-      simulateEvent('singleclick', 10, -20, false, 0);
+      simulateEvent('pointerdown', 10, -20, {alt: true}, 0);
+      simulateEvent('pointerup', 10, -20, {alt: true}, 0);
+      simulateEvent('click', 10, -20, {alt: true}, 0);
+      simulateEvent('singleclick', 10, -20, {alt: true}, 0);
 
       expect(first.getGeometry().getRevision()).to.equal(firstRevision + 1);
       expect(first.getGeometry().getCoordinates()[0]).to.have.length(4);
@@ -217,7 +229,7 @@ describe('ol.interaction.Modify', function() {
     it('deletes first vertex of a LineString', function() {
       var lineFeature = new ol.Feature({
         geometry: new ol.geom.LineString(
-          [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
+            [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
         )
       });
       features.length = 0;
@@ -237,10 +249,10 @@ describe('ol.interaction.Modify', function() {
       expect(first.getGeometry().getRevision()).to.equal(firstRevision);
       expect(first.getGeometry().getCoordinates()).to.have.length(5);
 
-      simulateEvent('pointerdown', 0, 0, false, 0);
-      simulateEvent('pointerup', 0, 0, false, 0);
-      simulateEvent('click', 0, 0, false, 0);
-      simulateEvent('singleclick', 0, 0, false, 0);
+      simulateEvent('pointerdown', 0, 0, {alt: true}, 0);
+      simulateEvent('pointerup', 0, 0, {alt: true}, 0);
+      simulateEvent('click', 0, 0, {alt: true}, 0);
+      simulateEvent('singleclick', 0, 0, {alt: true}, 0);
 
       expect(first.getGeometry().getRevision()).to.equal(firstRevision + 1);
       expect(first.getGeometry().getCoordinates()).to.have.length(4);
@@ -253,7 +265,7 @@ describe('ol.interaction.Modify', function() {
     it('deletes last vertex of a LineString', function() {
       var lineFeature = new ol.Feature({
         geometry: new ol.geom.LineString(
-          [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
+            [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
         )
       });
       features.length = 0;
@@ -273,10 +285,10 @@ describe('ol.interaction.Modify', function() {
       expect(first.getGeometry().getRevision()).to.equal(firstRevision);
       expect(first.getGeometry().getCoordinates()).to.have.length(5);
 
-      simulateEvent('pointerdown', 40, 0, false, 0);
-      simulateEvent('pointerup', 40, 0, false, 0);
-      simulateEvent('click', 40, 0, false, 0);
-      simulateEvent('singleclick', 40, 0, false, 0);
+      simulateEvent('pointerdown', 40, 0, {alt: true}, 0);
+      simulateEvent('pointerup', 40, 0, {alt: true}, 0);
+      simulateEvent('click', 40, 0, {alt: true}, 0);
+      simulateEvent('singleclick', 40, 0, {alt: true}, 0);
 
       expect(first.getGeometry().getRevision()).to.equal(firstRevision + 1);
       expect(first.getGeometry().getCoordinates()).to.have.length(4);
@@ -289,7 +301,7 @@ describe('ol.interaction.Modify', function() {
     it('deletes vertex of a LineString programmatically', function() {
       var lineFeature = new ol.Feature({
         geometry: new ol.geom.LineString(
-          [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
+            [[0, 0], [10, 20], [0, 40], [40, 40], [40, 0]]
         )
       });
       features.length = 0;
@@ -309,8 +321,8 @@ describe('ol.interaction.Modify', function() {
       expect(first.getGeometry().getRevision()).to.equal(firstRevision);
       expect(first.getGeometry().getCoordinates()).to.have.length(5);
 
-      simulateEvent('pointerdown', 40, 0, false, 0);
-      simulateEvent('pointerup', 40, 0, false, 0);
+      simulateEvent('pointerdown', 40, 0, null, 0);
+      simulateEvent('pointerup', 40, 0, null, 0);
 
       var removed = modify.removePoint();
 
@@ -324,6 +336,83 @@ describe('ol.interaction.Modify', function() {
     });
 
 
+  });
+
+  describe('vertex modification', function() {
+
+    it('keeps the third dimension', function() {
+      var lineFeature = new ol.Feature({
+        geometry: new ol.geom.LineString(
+            [[0, 0, 10], [10, 20, 20], [0, 40, 30], [40, 40, 40], [40, 0, 50]]
+        )
+      });
+      features.length = 0;
+      features.push(lineFeature);
+
+      var modify = new ol.interaction.Modify({
+        features: new ol.Collection(features)
+      });
+      map.addInteraction(modify);
+
+      // Move first vertex
+      simulateEvent('pointermove', 0, 0, null, 0);
+      simulateEvent('pointerdown', 0, 0, null, 0);
+      simulateEvent('pointermove', -10, -10, null, 0);
+      simulateEvent('pointerdrag', -10, -10, null, 0);
+      simulateEvent('pointerup', -10, -10, null, 0);
+
+      // Move middle vertex
+      simulateEvent('pointermove', 0, -40, null, 0);
+      simulateEvent('pointerdown', 0, -40, null, 0);
+      simulateEvent('pointermove', 10, -30, null, 0);
+      simulateEvent('pointerdrag', 10, -30, null, 0);
+      simulateEvent('pointerup', 10, -30, null, 0);
+
+      // Move last vertex
+      simulateEvent('pointermove', 40, 0, null, 0);
+      simulateEvent('pointerdown', 40, 0, null, 0);
+      simulateEvent('pointermove', 50, -10, null, 0);
+      simulateEvent('pointerdrag', 50, -10, null, 0);
+      simulateEvent('pointerup', 50, -10, null, 0);
+
+      expect(lineFeature.getGeometry().getCoordinates()[0][2]).to.equal(10);
+      expect(lineFeature.getGeometry().getCoordinates()[2][2]).to.equal(30);
+      expect(lineFeature.getGeometry().getCoordinates()[4][2]).to.equal(50);
+    });
+
+  });
+
+  describe('circle modification', function() {
+    it('changes the circle radius and center', function() {
+      var circleFeature = new ol.Feature(new ol.geom.Circle([10, 10], 20));
+      features.length = 0;
+      features.push(circleFeature);
+
+      var modify = new ol.interaction.Modify({
+        features: new ol.Collection(features)
+      });
+      map.addInteraction(modify);
+
+      // Change center
+      simulateEvent('pointermove', 10, -10, null, 0);
+      simulateEvent('pointerdown', 10, -10, null, 0);
+      simulateEvent('pointermove', 5, -5, null, 0);
+      simulateEvent('pointerdrag', 5, -5, null, 0);
+      simulateEvent('pointerup', 5, -5, null, 0);
+
+      expect(circleFeature.getGeometry().getRadius()).to.equal(20);
+      expect(circleFeature.getGeometry().getCenter()).to.eql([5, 5]);
+
+      // Increase radius
+      simulateEvent('pointermove', 25, -4, null, 0);
+      simulateEvent('pointerdown', 25, -4, null, 0);
+      simulateEvent('pointermove', 30, -5, null, 0);
+      simulateEvent('pointerdrag', 30, -5, null, 0);
+      simulateEvent('pointerup', 30, -5, null, 0);
+
+      expect(circleFeature.getGeometry().getRadius()).to.equal(25);
+      expect(circleFeature.getGeometry().getCenter()).to.eql([5, 5]);
+    });
   });
 
   describe('boundary modification', function() {
@@ -344,10 +433,10 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 10, -20, false, 0);
-      simulateEvent('pointerup', 10, -20, false, 0);
-      simulateEvent('click', 10, -20, false, 0);
-      simulateEvent('singleclick', 10, -20, false, 0);
+      simulateEvent('pointerdown', 10, -20, {alt: true}, 0);
+      simulateEvent('pointerup', 10, -20, {alt: true}, 0);
+      simulateEvent('click', 10, -20, {alt: true}, 0);
+      simulateEvent('singleclick', 10, -20, {alt: true}, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(2);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(4);
@@ -359,10 +448,10 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 40, -20, false, 0);
-      simulateEvent('pointerup', 40, -20, false, 0);
-      simulateEvent('click', 40, -20, false, 0);
-      simulateEvent('singleclick', 40, -20, false, 0);
+      simulateEvent('pointerdown', 40, -20, null, 0);
+      simulateEvent('pointerup', 40, -20, null, 0);
+      simulateEvent('click', 40, -20, null, 0);
+      simulateEvent('singleclick', 40, -20, null, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(2);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(6);
@@ -374,10 +463,10 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 40, -20, false, 0);
-      simulateEvent('pointerup', 40, -20, false, 0);
-      simulateEvent('click', 40, -20, false, 0);
-      simulateEvent('singleclick', 40, -20, false, 0);
+      simulateEvent('pointerdown', 40, -20, null, 0);
+      simulateEvent('pointerup', 40, -20, null, 0);
+      simulateEvent('click', 40, -20, null, 0);
+      simulateEvent('singleclick', 40, -20, null, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(2);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(6);
@@ -385,10 +474,10 @@ describe('ol.interaction.Modify', function() {
       validateEvents(events, [feature]);
       events.length = 0;
 
-      simulateEvent('pointerdown', 40, -20, false, 0);
-      simulateEvent('pointerup', 40, -20, false, 0);
-      simulateEvent('click', 40, -20, false, 0);
-      simulateEvent('singleclick', 40, -20, false, 0);
+      simulateEvent('pointerdown', 40, -20, {alt: true}, 0);
+      simulateEvent('pointerup', 40, -20, {alt: true}, 0);
+      simulateEvent('click', 40, -20, {alt: true}, 0);
+      simulateEvent('singleclick', 40, -20, {alt: true}, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(3);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
@@ -400,11 +489,11 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointermove', 40, -20, false, 0);
-      simulateEvent('pointerdown', 40, -20, false, 0);
-      simulateEvent('pointermove', 30, -20, false, 0);
-      simulateEvent('pointerdrag', 30, -20, false, 0);
-      simulateEvent('pointerup', 30, -20, false, 0);
+      simulateEvent('pointermove', 40, -20, null, 0);
+      simulateEvent('pointerdown', 40, -20, null, 0);
+      simulateEvent('pointermove', 30, -20, null, 0);
+      simulateEvent('pointerdrag', 30, -20, null, 0);
+      simulateEvent('pointerup', 30, -20, null, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(4);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(6);
@@ -416,12 +505,12 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointermove', 40, -20, false, 0);
+      simulateEvent('pointermove', 40, -20, null, 0);
       // right click
-      simulateEvent('pointerdown', 40, -20, false, 1);
-      simulateEvent('pointermove', 30, -20, false, 1);
-      simulateEvent('pointerdrag', 30, -20, false, 1);
-      simulateEvent('pointerup', 30, -20, false, 1);
+      simulateEvent('pointerdown', 40, -20, null, 1);
+      simulateEvent('pointermove', 30, -20, null, 1);
+      simulateEvent('pointerdrag', 30, -20, null, 1);
+      simulateEvent('pointerup', 30, -20, null, 1);
 
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
@@ -451,13 +540,13 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 10, -20, false, 0);
-      simulateEvent('pointerup', 10, -20, false, 0);
-      simulateEvent('click', 10, -20, false, 0);
-      simulateEvent('pointerdown', 10, -20, false, 0);
-      simulateEvent('pointerup', 10, -20, false, 0);
-      simulateEvent('click', 10, -20, false, 0);
-      simulateEvent('dblclick', 10, -20, false, 0);
+      simulateEvent('pointerdown', 10, -20, null, 0);
+      simulateEvent('pointerup', 10, -20, null, 0);
+      simulateEvent('click', 10, -20, null, 0);
+      simulateEvent('pointerdown', 10, -20, null, 0);
+      simulateEvent('pointerup', 10, -20, null, 0);
+      simulateEvent('click', 10, -20, null, 0);
+      simulateEvent('dblclick', 10, -20, null, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(2);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(4);
@@ -470,15 +559,49 @@ describe('ol.interaction.Modify', function() {
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
-      simulateEvent('pointerdown', 10, -20, false, 0);
-      simulateEvent('pointerup', 10, -20, false, 0);
-      simulateEvent('click', 10, -20, false, 0);
-      simulateEvent('singleclick', 10, -20, false, 0);
+      simulateEvent('pointerdown', 10, -20, null, 0);
+      simulateEvent('pointerup', 10, -20, null, 0);
+      simulateEvent('click', 10, -20, null, 0);
+      simulateEvent('singleclick', 10, -20, null, 0);
 
       expect(feature.getGeometry().getRevision()).to.equal(1);
       expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
 
       expect(events.length).to.eql(0);
+    });
+  });
+
+  describe('insertVertexCondition', function() {
+    it('calls the callback function', function() {
+      var listenerSpy = sinon.spy(function(event) {
+        return false;
+      });
+
+      var modify = new ol.interaction.Modify({
+        features: new ol.Collection(features),
+        insertVertexCondition: listenerSpy
+      });
+      map.addInteraction(modify);
+      var feature = features[0];
+
+      // move first vertex
+      simulateEvent('pointermove', 0, 0, null, 0);
+      simulateEvent('pointerdown', 0, 0, null, 0);
+      simulateEvent('pointermove', -10, -10, null, 0);
+      simulateEvent('pointerdrag', -10, -10, null, 0);
+      simulateEvent('pointerup', -10, -10, null, 0);
+
+      expect(listenerSpy.callCount).to.be(0);
+      expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
+
+      // try to add vertex
+      simulateEvent('pointerdown', 40, -20, null, 0);
+      simulateEvent('pointerup', 40, -20, null, 0);
+      simulateEvent('click', 40, -20, null, 0);
+      simulateEvent('singleclick', 40, -20, null, 0);
+
+      expect(listenerSpy.callCount).to.be(1);
+      expect(feature.getGeometry().getCoordinates()[0]).to.have.length(5);
     });
   });
 
@@ -495,7 +618,47 @@ describe('ol.interaction.Modify', function() {
       };
     });
 
-    it('updates the segment data', function() {
+    it('updates circle segment data', function() {
+      var feature = new ol.Feature(new ol.geom.Circle([10, 10], 20));
+      features.length = 0;
+      features.push(feature);
+
+      var modify = new ol.interaction.Modify({
+        features: new ol.Collection(features)
+      });
+      map.addInteraction(modify);
+
+      var listeners;
+
+      listeners = getListeners(feature, modify);
+      expect(listeners).to.have.length(1);
+
+      var firstSegmentData;
+
+      firstSegmentData = modify.rBush_.forEachInExtent([0, 0, 5, 5],
+          function(node) {
+            return node;
+          });
+      expect(firstSegmentData.segment[0]).to.eql([10, 10]);
+      expect(firstSegmentData.segment[1]).to.eql([10, 10]);
+
+      var center = feature.getGeometry().getCenter();
+      center[0] = 1;
+      center[1] = 1;
+      feature.getGeometry().setCenter(center);
+
+      firstSegmentData = modify.rBush_.forEachInExtent([0, 0, 5, 5],
+          function(node) {
+            return node;
+          });
+      expect(firstSegmentData.segment[0]).to.eql([1, 1]);
+      expect(firstSegmentData.segment[1]).to.eql([1, 1]);
+
+      listeners = getListeners(feature, modify);
+      expect(listeners).to.have.length(1);
+    });
+
+    it('updates polygon segment data', function() {
       var modify = new ol.interaction.Modify({
         features: new ol.Collection(features)
       });
@@ -531,6 +694,22 @@ describe('ol.interaction.Modify', function() {
 
       listeners = getListeners(feature, modify);
       expect(listeners).to.have.length(1);
+    });
+  });
+
+  describe('#setActive', function() {
+    it('removes the vertexFeature of deactivation', function() {
+      var modify = new ol.interaction.Modify({
+        features: new ol.Collection(features)
+      });
+      map.addInteraction(modify);
+      expect(modify.vertexFeature_).to.be(null);
+
+      simulateEvent('pointermove', 10, -20, null, 0);
+      expect(modify.vertexFeature_).to.not.be(null);
+
+      modify.setActive(false);
+      expect(modify.vertexFeature_).to.be(null);
     });
   });
 

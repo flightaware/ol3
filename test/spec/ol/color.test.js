@@ -1,6 +1,7 @@
-goog.provide('ol.test.color');
+
 
 goog.require('ol.color');
+goog.require('ol');
 
 
 describe('ol.color', function() {
@@ -57,7 +58,8 @@ describe('ol.color', function() {
     });
 
     after(function() {
-      ol.color.fromStringInternal_.restore();
+      var spy = ol.color.fromStringInternal_;
+      spy.restore();
     });
 
     if (ol.ENABLE_NAMED_COLORS) {
@@ -78,17 +80,53 @@ describe('ol.color', function() {
       expect(ol.color.fromString('rgb(0, 0, 255)')).to.eql([0, 0, 255, 1]);
     });
 
+    it('ignores whitespace before, between & after numbers (rgb)', function() {
+      expect(ol.color.fromString('rgb( \t 0  ,   0 \n , 255  )')).to.eql(
+          [0, 0, 255, 1]);
+    });
+
     it('can parse rgba colors', function() {
+      // opacity 0
+      expect(ol.color.fromString('rgba(255, 255, 0, 0)')).to.eql(
+          [255, 255, 0, 0]);
+      // opacity 0.0 (simple float)
+      expect(ol.color.fromString('rgba(255, 255, 0, 0.0)')).to.eql(
+          [255, 255, 0, 0]);
+      // opacity 0.0000000000000000 (float with 16 digits)
+      expect(ol.color.fromString('rgba(255, 255, 0, 0.0000000000000000)')).to.eql(
+          [255, 255, 0, 0]);
+      // opacity 0.1 (simple float)
       expect(ol.color.fromString('rgba(255, 255, 0, 0.1)')).to.eql(
           [255, 255, 0, 0.1]);
+      // opacity 0.1111111111111111 (float with 16 digits)
+      expect(ol.color.fromString('rgba(255, 255, 0, 0.1111111111111111)')).to.eql(
+          [255, 255, 0, 0.1111111111111111]);
+      // opacity 1
+      expect(ol.color.fromString('rgba(255, 255, 0, 1)')).to.eql(
+          [255, 255, 0, 1]);
+      // opacity 1.0
+      expect(ol.color.fromString('rgba(255, 255, 0, 1.0)')).to.eql(
+          [255, 255, 0, 1]);
+      // opacity 1.0000000000000000
+      expect(ol.color.fromString('rgba(255, 255, 0, 1.0000000000000000)')).to.eql(
+          [255, 255, 0, 1]);
+      // with 30 decimal digits
+      expect(ol.color.fromString('rgba(255, 255, 0, 0.123456789012345678901234567890)')).to.eql(
+          [255, 255, 0, 0.123456789012345678901234567890]);
+    });
+
+    it('ignores whitespace before, between & after numbers (rgba)', function() {
+      expect(ol.color.fromString('rgba( \t 0  ,   0 \n ,   255  ,   0.4711   )')).to.eql(
+          [0, 0, 255, 0.4711]);
     });
 
     it('caches parsed values', function() {
-      var count = ol.color.fromStringInternal_.callCount;
+      var spy = ol.color.fromStringInternal_;
+      var count = spy.callCount;
       ol.color.fromString('aquamarine');
-      expect(ol.color.fromStringInternal_.callCount).to.be(count + 1);
+      expect(spy.callCount).to.be(count + 1);
       ol.color.fromString('aquamarine');
-      expect(ol.color.fromStringInternal_.callCount).to.be(count + 1);
+      expect(spy.callCount).to.be(count + 1);
     });
 
     it('throws an error on invalid colors', function() {

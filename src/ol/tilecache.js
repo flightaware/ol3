@@ -12,24 +12,10 @@ goog.require('ol.structs.LRUCache');
  */
 ol.TileCache = function(opt_highWaterMark) {
 
-  ol.structs.LRUCache.call(this);
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.highWaterMark_ = opt_highWaterMark !== undefined ? opt_highWaterMark : 2048;
+  ol.structs.LRUCache.call(this, opt_highWaterMark);
 
 };
 ol.inherits(ol.TileCache, ol.structs.LRUCache);
-
-
-/**
- * @return {boolean} Can expire cache.
- */
-ol.TileCache.prototype.canExpireCache = function() {
-  return this.getCount() > this.highWaterMark_;
-};
 
 
 /**

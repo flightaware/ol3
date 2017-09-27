@@ -1,10 +1,10 @@
-goog.provide('ol.test.MapBrowserEventHandler');
 
-goog.require('ol.events');
+
 goog.require('ol.Map');
 goog.require('ol.MapBrowserEventHandler');
+goog.require('ol.events');
+goog.require('ol.has');
 goog.require('ol.pointer.PointerEvent');
-
 
 describe('ol.MapBrowserEventHandler', function() {
   describe('#emulateClick_', function() {
@@ -114,5 +114,61 @@ describe('ol.MapBrowserEventHandler', function() {
       expect(handler.down_).to.be(event);
     });
 
+  });
+
+  describe('#isMoving_', function() {
+    var defaultHandler;
+    var moveToleranceHandler;
+    var pointerdownAt0;
+    beforeEach(function() {
+      defaultHandler = new ol.MapBrowserEventHandler(new ol.Map({}));
+      moveToleranceHandler = new ol.MapBrowserEventHandler(new ol.Map({}), 8);
+      pointerdownAt0 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: 0,
+        clientY: 0
+      });
+      defaultHandler.handlePointerDown_(pointerdownAt0);
+      moveToleranceHandler.handlePointerDown_(pointerdownAt0);
+    });
+
+    it('is not moving if distance is 0', function() {
+      var pointerdownAt0 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: 0,
+        clientY: 0
+      });
+      expect(defaultHandler.isMoving_(pointerdownAt0)).to.be(false);
+    });
+
+    it('is moving if distance is 2', function() {
+      var pointerdownAt2 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: ol.has.DEVICE_PIXEL_RATIO + 1,
+        clientY: ol.has.DEVICE_PIXEL_RATIO + 1
+      });
+      expect(defaultHandler.isMoving_(pointerdownAt2)).to.be(true);
+    });
+
+    it('is moving with negative distance', function() {
+      var pointerdownAt2 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: -(ol.has.DEVICE_PIXEL_RATIO + 1),
+        clientY: -(ol.has.DEVICE_PIXEL_RATIO + 1)
+      });
+      expect(defaultHandler.isMoving_(pointerdownAt2)).to.be(true);
+    });
+
+    it('is not moving if distance is less than move tolerance', function() {
+      var pointerdownAt2 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: ol.has.DEVICE_PIXEL_RATIO + 1,
+        clientY: ol.has.DEVICE_PIXEL_RATIO + 1
+      });
+      expect(moveToleranceHandler.isMoving_(pointerdownAt2)).to.be(false);
+    });
+
+    it('is moving if distance is greater than move tolerance', function() {
+      var pointerdownAt9 = new ol.pointer.PointerEvent('pointerdown', {}, {
+        clientX: (ol.has.DEVICE_PIXEL_RATIO * 8) + 1,
+        clientY: (ol.has.DEVICE_PIXEL_RATIO * 8) + 1
+      });
+      expect(moveToleranceHandler.isMoving_(pointerdownAt9)).to.be(true);
+    });
   });
 });

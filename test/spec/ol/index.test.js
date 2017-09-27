@@ -1,4 +1,4 @@
-goog.provide('ol.test');
+
 goog.require('ol');
 
 describe('getUid()', function() {
@@ -8,7 +8,7 @@ describe('getUid()', function() {
   });
 
   it('generates a strictly increasing sequence', function() {
-    var a = {} , b = {}, c = {};
+    var a = {}, b = {}, c = {};
     ol.getUid(a);
     ol.getUid(c);
     ol.getUid(b);

@@ -1,9 +1,9 @@
-goog.provide('ol.test.interaction.Interaction');
 
-goog.require('ol.events.EventTarget');
+
 goog.require('ol.Map');
+goog.require('ol.View');
+goog.require('ol.events.EventTarget');
 goog.require('ol.interaction.Interaction');
-
 
 describe('ol.interaction.Interaction', function() {
 
@@ -56,6 +56,69 @@ describe('ol.interaction.Interaction', function() {
       expect(interaction.getMap()).to.be(null);
     });
 
+  });
+
+  describe('zoomByDelta()', function() {
+
+    it('changes view resolution', function() {
+      var view = new ol.View({
+        resolution: 1,
+        resolutions: [4, 2, 1, 0.5, 0.25]
+      });
+
+      ol.interaction.Interaction.zoomByDelta(view, 1);
+      expect(view.getResolution()).to.be(0.5);
+
+      ol.interaction.Interaction.zoomByDelta(view, -1);
+      expect(view.getResolution()).to.be(1);
+
+      ol.interaction.Interaction.zoomByDelta(view, 2);
+      expect(view.getResolution()).to.be(0.25);
+
+      ol.interaction.Interaction.zoomByDelta(view, -2);
+      expect(view.getResolution()).to.be(1);
+    });
+
+    it('changes view resolution and center relative to the anchor', function() {
+      var view = new ol.View({
+        center: [0, 0],
+        resolution: 1,
+        resolutions: [4, 2, 1, 0.5, 0.25]
+      });
+
+      ol.interaction.Interaction.zoomByDelta(view, 1, [10, 10]);
+      expect(view.getCenter()).to.eql([5, 5]);
+
+      ol.interaction.Interaction.zoomByDelta(view, -1, [0, 0]);
+      expect(view.getCenter()).to.eql([10, 10]);
+
+      ol.interaction.Interaction.zoomByDelta(view, 2, [0, 0]);
+      expect(view.getCenter()).to.eql([2.5, 2.5]);
+
+      ol.interaction.Interaction.zoomByDelta(view, -2, [0, 0]);
+      expect(view.getCenter()).to.eql([10, 10]);
+    });
+
+    it('changes view resolution and center relative to the anchor, while respecting the extent', function() {
+      var view = new ol.View({
+        center: [0, 0],
+        extent: [-2.5, -2.5, 2.5, 2.5],
+        resolution: 1,
+        resolutions: [4, 2, 1, 0.5, 0.25]
+      });
+
+      ol.interaction.Interaction.zoomByDelta(view, 1, [10, 10]);
+      expect(view.getCenter()).to.eql([2.5, 2.5]);
+
+      ol.interaction.Interaction.zoomByDelta(view, -1, [0, 0]);
+      expect(view.getCenter()).to.eql([2.5, 2.5]);
+
+      ol.interaction.Interaction.zoomByDelta(view, 2, [10, 10]);
+      expect(view.getCenter()).to.eql([2.5, 2.5]);
+
+      ol.interaction.Interaction.zoomByDelta(view, -2, [0, 0]);
+      expect(view.getCenter()).to.eql([2.5, 2.5]);
+    });
   });
 
 });

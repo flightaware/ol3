@@ -1,8 +1,8 @@
 goog.provide('ol.ImageCanvas');
 
 goog.require('ol');
-goog.require('ol.Image');
 goog.require('ol.ImageBase');
+goog.require('ol.ImageState');
 
 
 /**
@@ -27,7 +27,7 @@ ol.ImageCanvas = function(extent, resolution, pixelRatio, attributions,
   this.loader_ = opt_loader !== undefined ? opt_loader : null;
 
   var state = opt_loader !== undefined ?
-      ol.Image.State.IDLE : ol.Image.State.LOADED;
+    ol.ImageState.IDLE : ol.ImageState.LOADED;
 
   ol.ImageBase.call(this, extent, resolution, pixelRatio, state, attributions);
 
@@ -64,21 +64,20 @@ ol.ImageCanvas.prototype.getError = function() {
 ol.ImageCanvas.prototype.handleLoad_ = function(err) {
   if (err) {
     this.error_ = err;
-    this.state = ol.Image.State.ERROR;
+    this.state = ol.ImageState.ERROR;
   } else {
-    this.state = ol.Image.State.LOADED;
+    this.state = ol.ImageState.LOADED;
   }
   this.changed();
 };
 
 
 /**
- * Trigger drawing on canvas.
+ * @inheritDoc
  */
 ol.ImageCanvas.prototype.load = function() {
-  if (this.state == ol.Image.State.IDLE) {
-    ol.DEBUG && console.assert(this.loader_, 'this.loader_ must be set');
-    this.state = ol.Image.State.LOADING;
+  if (this.state == ol.ImageState.IDLE) {
+    this.state = ol.ImageState.LOADING;
     this.changed();
     this.loader_(this.handleLoad_.bind(this));
   }
@@ -88,6 +87,6 @@ ol.ImageCanvas.prototype.load = function() {
 /**
  * @inheritDoc
  */
-ol.ImageCanvas.prototype.getImage = function(opt_context) {
+ol.ImageCanvas.prototype.getImage = function() {
   return this.canvas_;
 };

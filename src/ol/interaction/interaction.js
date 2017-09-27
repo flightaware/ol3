@@ -4,8 +4,8 @@ goog.provide('ol.interaction.Interaction');
 
 goog.require('ol');
 goog.require('ol.Object');
-goog.require('ol.animation');
 goog.require('ol.easing');
+goog.require('ol.interaction.Property');
 
 
 /**
@@ -31,7 +31,7 @@ ol.interaction.Interaction = function(options) {
 
   /**
    * @private
-   * @type {ol.Map}
+   * @type {ol.PluggableMap}
    */
   this.map_ = null;
 
@@ -54,13 +54,13 @@ ol.inherits(ol.interaction.Interaction, ol.Object);
  */
 ol.interaction.Interaction.prototype.getActive = function() {
   return /** @type {boolean} */ (
-      this.get(ol.interaction.Interaction.Property.ACTIVE));
+    this.get(ol.interaction.Property.ACTIVE));
 };
 
 
 /**
  * Get the map associated with this interaction.
- * @return {ol.Map} Map.
+ * @return {ol.PluggableMap} Map.
  * @api
  */
 ol.interaction.Interaction.prototype.getMap = function() {
@@ -75,7 +75,7 @@ ol.interaction.Interaction.prototype.getMap = function() {
  * @api
  */
 ol.interaction.Interaction.prototype.setActive = function(active) {
-  this.set(ol.interaction.Interaction.Property.ACTIVE, active);
+  this.set(ol.interaction.Property.ACTIVE, active);
 };
 
 
@@ -83,7 +83,7 @@ ol.interaction.Interaction.prototype.setActive = function(active) {
  * Remove the interaction from its current map and attach it to the new map.
  * Subclasses may set up event handlers to get notified about changes to
  * the map here.
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
  */
 ol.interaction.Interaction.prototype.setMap = function(map) {
   this.map_ = map;
@@ -91,75 +91,66 @@ ol.interaction.Interaction.prototype.setMap = function(map) {
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {ol.Coordinate} delta Delta.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.pan = function(map, view, delta, opt_duration) {
+ol.interaction.Interaction.pan = function(view, delta, opt_duration) {
   var currentCenter = view.getCenter();
   if (currentCenter) {
-    if (opt_duration && opt_duration > 0) {
-      map.beforeRender(ol.animation.pan({
-        source: currentCenter,
-        duration: opt_duration,
-        easing: ol.easing.linear
-      }));
-    }
     var center = view.constrainCenter(
         [currentCenter[0] + delta[0], currentCenter[1] + delta[1]]);
-    view.setCenter(center);
+    if (opt_duration) {
+      view.animate({
+        duration: opt_duration,
+        easing: ol.easing.linear,
+        center: center
+      });
+    } else {
+      view.setCenter(center);
+    }
   }
 };
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {number|undefined} rotation Rotation.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.rotate = function(map, view, rotation, opt_anchor, opt_duration) {
+ol.interaction.Interaction.rotate = function(view, rotation, opt_anchor, opt_duration) {
   rotation = view.constrainRotation(rotation, 0);
   ol.interaction.Interaction.rotateWithoutConstraints(
-      map, view, rotation, opt_anchor, opt_duration);
+      view, rotation, opt_anchor, opt_duration);
 };
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {number|undefined} rotation Rotation.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.rotateWithoutConstraints = function(map, view, rotation, opt_anchor, opt_duration) {
+ol.interaction.Interaction.rotateWithoutConstraints = function(view, rotation, opt_anchor, opt_duration) {
   if (rotation !== undefined) {
     var currentRotation = view.getRotation();
     var currentCenter = view.getCenter();
-    if (currentRotation !== undefined && currentCenter &&
-        opt_duration && opt_duration > 0) {
-      map.beforeRender(ol.animation.rotate({
-        rotation: currentRotation,
+    if (currentRotation !== undefined && currentCenter && opt_duration > 0) {
+      view.animate({
+        rotation: rotation,
+        anchor: opt_anchor,
         duration: opt_duration,
         easing: ol.easing.easeOut
-      }));
-      if (opt_anchor) {
-        map.beforeRender(ol.animation.pan({
-          source: currentCenter,
-          duration: opt_duration,
-          easing: ol.easing.easeOut
-        }));
-      }
+      });
+    } else {
+      view.rotate(rotation, opt_anchor);
     }
-    view.rotate(rotation, opt_anchor);
   }
 };
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {number|undefined} resolution Resolution to go to.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
@@ -173,67 +164,68 @@ ol.interaction.Interaction.rotateWithoutConstraints = function(map, view, rotati
  *     will select the nearest resolution. If not defined 0 is
  *     assumed.
  */
-ol.interaction.Interaction.zoom = function(map, view, resolution, opt_anchor, opt_duration, opt_direction) {
+ol.interaction.Interaction.zoom = function(view, resolution, opt_anchor, opt_duration, opt_direction) {
   resolution = view.constrainResolution(resolution, 0, opt_direction);
   ol.interaction.Interaction.zoomWithoutConstraints(
-      map, view, resolution, opt_anchor, opt_duration);
+      view, resolution, opt_anchor, opt_duration);
 };
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {number} delta Delta from previous zoom level.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.zoomByDelta = function(map, view, delta, opt_anchor, opt_duration) {
+ol.interaction.Interaction.zoomByDelta = function(view, delta, opt_anchor, opt_duration) {
   var currentResolution = view.getResolution();
   var resolution = view.constrainResolution(currentResolution, delta, 0);
+
+  // If we have a constraint on center, we need to change the anchor so that the
+  // new center is within the extent. We first calculate the new center, apply
+  // the constraint to it, and then calculate back the anchor
+  if (opt_anchor && resolution !== undefined && resolution !== currentResolution) {
+    var currentCenter = view.getCenter();
+    var center = view.calculateCenterZoom(resolution, opt_anchor);
+    center = view.constrainCenter(center);
+
+    opt_anchor = [
+      (resolution * currentCenter[0] - currentResolution * center[0]) /
+          (resolution - currentResolution),
+      (resolution * currentCenter[1] - currentResolution * center[1]) /
+          (resolution - currentResolution)
+    ];
+  }
+
   ol.interaction.Interaction.zoomWithoutConstraints(
-      map, view, resolution, opt_anchor, opt_duration);
+      view, resolution, opt_anchor, opt_duration);
 };
 
 
 /**
- * @param {ol.Map} map Map.
  * @param {ol.View} view View.
  * @param {number|undefined} resolution Resolution to go to.
  * @param {ol.Coordinate=} opt_anchor Anchor coordinate.
  * @param {number=} opt_duration Duration.
  */
-ol.interaction.Interaction.zoomWithoutConstraints = function(map, view, resolution, opt_anchor, opt_duration) {
+ol.interaction.Interaction.zoomWithoutConstraints = function(view, resolution, opt_anchor, opt_duration) {
   if (resolution) {
     var currentResolution = view.getResolution();
     var currentCenter = view.getCenter();
     if (currentResolution !== undefined && currentCenter &&
-        resolution !== currentResolution &&
-        opt_duration && opt_duration > 0) {
-      map.beforeRender(ol.animation.zoom({
-        resolution: currentResolution,
+        resolution !== currentResolution && opt_duration) {
+      view.animate({
+        resolution: resolution,
+        anchor: opt_anchor,
         duration: opt_duration,
         easing: ol.easing.easeOut
-      }));
+      });
+    } else {
       if (opt_anchor) {
-        map.beforeRender(ol.animation.pan({
-          source: currentCenter,
-          duration: opt_duration,
-          easing: ol.easing.easeOut
-        }));
+        var center = view.calculateCenterZoom(resolution, opt_anchor);
+        view.setCenter(center);
       }
+      view.setResolution(resolution);
     }
-    if (opt_anchor) {
-      var center = view.calculateCenterZoom(resolution, opt_anchor);
-      view.setCenter(center);
-    }
-    view.setResolution(resolution);
   }
-};
-
-
-/**
- * @enum {string}
- */
-ol.interaction.Interaction.Property = {
-  ACTIVE: 'active'
 };

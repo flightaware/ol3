@@ -1,19 +1,22 @@
 goog.provide('ol.format.filter.And');
 
 goog.require('ol');
-goog.require('ol.format.filter.LogicalBinary');
+goog.require('ol.format.filter.LogicalNary');
 
 /**
  * @classdesc
- * Represents a logical `<And>` operator between two filter conditions.
+ * Represents a logical `<And>` operator between two or more filter conditions.
+ *
+ * deprecated: This class will no longer be exported starting from the next major version.
  *
  * @constructor
- * @param {!ol.format.filter.Filter} conditionA First filter condition.
- * @param {!ol.format.filter.Filter} conditionB Second filter condition.
- * @extends {ol.format.filter.LogicalBinary}
+ * @abstract
+ * @param {...ol.format.filter.Filter} conditions Conditions.
+ * @extends {ol.format.filter.LogicalNary}
  * @api
  */
-ol.format.filter.And = function(conditionA, conditionB) {
-  ol.format.filter.LogicalBinary.call(this, 'And', conditionA, conditionB);
+ol.format.filter.And = function(conditions) {
+  var params = ['And'].concat(Array.prototype.slice.call(arguments));
+  ol.format.filter.LogicalNary.apply(this, params);
 };
-ol.inherits(ol.format.filter.And, ol.format.filter.LogicalBinary);
+ol.inherits(ol.format.filter.And, ol.format.filter.LogicalNary);

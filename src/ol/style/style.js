@@ -52,6 +52,12 @@ ol.style.Style = function(opt_options) {
 
   /**
    * @private
+   * @type {ol.StyleRenderFunction|null}
+   */
+  this.renderer_ = options.renderer !== undefined ? options.renderer : null;
+
+  /**
+   * @private
    * @type {ol.style.Stroke}
    */
   this.stroke_ = options.stroke !== undefined ? options.stroke : null;
@@ -93,6 +99,28 @@ ol.style.Style.prototype.clone = function() {
 
 
 /**
+ * Get the custom renderer function that was configured with
+ * {@link #setRenderer} or the `renderer` constructor option.
+ * @return {ol.StyleRenderFunction|null} Custom renderer function.
+ * @api
+ */
+ol.style.Style.prototype.getRenderer = function() {
+  return this.renderer_;
+};
+
+
+/**
+ * Sets a custom renderer function for this style. When set, `fill`, `stroke`
+ * and `image` options of the style will be ignored.
+ * @param {ol.StyleRenderFunction|null} renderer Custom renderer function.
+ * @api
+ */
+ol.style.Style.prototype.setRenderer = function(renderer) {
+  this.renderer_ = renderer;
+};
+
+
+/**
  * Get the geometry to be rendered.
  * @return {string|ol.geom.Geometry|ol.StyleGeometryFunction}
  * Feature property or geometry or function that returns the geometry that will
@@ -126,12 +154,32 @@ ol.style.Style.prototype.getFill = function() {
 
 
 /**
+ * Set the fill style.
+ * @param {ol.style.Fill} fill Fill style.
+ * @api
+ */
+ol.style.Style.prototype.setFill = function(fill) {
+  this.fill_ = fill;
+};
+
+
+/**
  * Get the image style.
  * @return {ol.style.Image} Image style.
  * @api
  */
 ol.style.Style.prototype.getImage = function() {
   return this.image_;
+};
+
+
+/**
+ * Set the image style.
+ * @param {ol.style.Image} image Image style.
+ * @api
+ */
+ol.style.Style.prototype.setImage = function(image) {
+  this.image_ = image;
 };
 
 
@@ -146,12 +194,32 @@ ol.style.Style.prototype.getStroke = function() {
 
 
 /**
+ * Set the stroke style.
+ * @param {ol.style.Stroke} stroke Stroke style.
+ * @api
+ */
+ol.style.Style.prototype.setStroke = function(stroke) {
+  this.stroke_ = stroke;
+};
+
+
+/**
  * Get the text style.
  * @return {ol.style.Text} Text style.
  * @api
  */
 ol.style.Style.prototype.getText = function() {
   return this.text_;
+};
+
+
+/**
+ * Set the text style.
+ * @param {ol.style.Text} text Text style.
+ * @api
+ */
+ol.style.Style.prototype.setText = function(text) {
+  this.text_ = text;
 };
 
 

@@ -8,6 +8,7 @@ goog.provide('ol.style.Image');
  * {@link ol.style.RegularShape}.
  *
  * @constructor
+ * @abstract
  * @param {ol.StyleImageOptions} options Options.
  * @api
  */
@@ -124,7 +125,7 @@ ol.style.Image.prototype.getHitDetectionImage = function(pixelRatio) {};
 
 /**
  * @abstract
- * @return {ol.Image.State} Image state.
+ * @return {ol.ImageState} Image state.
  */
 ol.style.Image.prototype.getImageState = function() {};
 

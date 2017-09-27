@@ -1,4 +1,4 @@
-goog.provide('ol.test.reader.GeoJSON');
+
 
 goog.require('ol.Feature');
 goog.require('ol.extent');
@@ -616,7 +616,7 @@ describe('ol.format.GeoJSON', function() {
       var point = new ol.geom.Point(ol.proj.fromLonLat([10, 20]));
       var geojson = format.writeGeometry(point, {featureProjection: 'EPSG:3857'});
       var obj = JSON.parse(geojson);
-      expect(obj.coordinates).to.eql([10, 20]);
+      expect(obj.coordinates).to.eql(ol.proj.toLonLat(point.getCoordinates()));
     });
 
     it('respects featureProjection passed to constructor', function() {
@@ -624,7 +624,7 @@ describe('ol.format.GeoJSON', function() {
       var point = new ol.geom.Point(ol.proj.fromLonLat([10, 20]));
       var geojson = format.writeGeometry(point);
       var obj = JSON.parse(geojson);
-      expect(obj.coordinates).to.eql([10, 20]);
+      expect(obj.coordinates).to.eql(ol.proj.toLonLat(point.getCoordinates()));
     });
 
     it('encodes linestring', function() {
@@ -809,7 +809,7 @@ describe('ol.format.GeoJSON', function() {
     });
 
     it('truncates transformed point with decimals option', function() {
-      var point = new ol.geom.Point([2, 3]).transform('EPSG:4326','EPSG:3857');
+      var point = new ol.geom.Point([2, 3]).transform('EPSG:4326', 'EPSG:3857');
       var geojson = format.writeGeometry(point, {
         featureProjection: 'EPSG:3857',
         decimals: 2
@@ -820,12 +820,26 @@ describe('ol.format.GeoJSON', function() {
 
     it('truncates a linestring with decimals option', function() {
       var linestring = new ol.geom.LineString([[42.123456789, 38.987654321],
-          [43, 39]]);
+        [43, 39]]);
       var geojson = format.writeGeometry(linestring, {
         decimals: 6
       });
       expect(format.readGeometry(geojson).getCoordinates()).to.eql(
           [[42.123457, 38.987654], [43, 39]]);
+      expect(linestring.getCoordinates()).to.eql(
+          [[42.123456789, 38.987654321], [43, 39]]);
+    });
+
+    it('rounds a linestring with decimals option = 0', function() {
+      var linestring = new ol.geom.LineString([[42.123456789, 38.987654321],
+        [43, 39]]);
+      var geojson = format.writeGeometry(linestring, {
+        decimals: 0
+      });
+      expect(format.readGeometry(geojson).getCoordinates()).to.eql(
+          [[42, 39], [43, 39]]);
+      expect(linestring.getCoordinates()).to.eql(
+          [[42.123456789, 38.987654321], [43, 39]]);
     });
   });
 

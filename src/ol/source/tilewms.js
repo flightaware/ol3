@@ -24,7 +24,7 @@ goog.require('ol.uri');
  * @constructor
  * @extends {ol.source.TileImage}
  * @param {olx.source.TileWMSOptions=} opt_options Tile WMS options.
- * @api stable
+ * @api
  */
 ol.source.TileWMS = function(opt_options) {
 
@@ -42,6 +42,7 @@ ol.source.TileWMS = function(opt_options) {
     opaque: !transparent,
     projection: options.projection,
     reprojectionErrorThreshold: options.reprojectionErrorThreshold,
+    tileClass: options.tileClass,
     tileGrid: options.tileGrid,
     tileLoadFunction: options.tileLoadFunction,
     url: options.url,
@@ -71,8 +72,7 @@ ol.source.TileWMS = function(opt_options) {
    * @private
    * @type {ol.source.WMSServerType|undefined}
    */
-  this.serverType_ =
-      /** @type {ol.source.WMSServerType|undefined} */ (options.serverType);
+  this.serverType_ = /** @type {ol.source.WMSServerType|undefined} */ (options.serverType);
 
   /**
    * @private
@@ -112,13 +112,9 @@ ol.inherits(ol.source.TileWMS, ol.source.TileImage);
  *     in the `LAYERS` parameter will be used. `VERSION` should not be
  *     specified here.
  * @return {string|undefined} GetFeatureInfo URL.
- * @api stable
+ * @api
  */
 ol.source.TileWMS.prototype.getGetFeatureInfoUrl = function(coordinate, resolution, projection, params) {
-
-  ol.DEBUG && console.assert(!('VERSION' in params),
-      'key VERSION is not allowed in params');
-
   var projectionObj = ol.proj.get(projection);
 
   var tileGrid = this.getTileGrid();
@@ -186,7 +182,7 @@ ol.source.TileWMS.prototype.getKeyZXY = function(z, x, y) {
  * Get the user-provided params, i.e. those passed to the constructor through
  * the "params" option, and possibly updated using the updateParams method.
  * @return {Object} Params.
- * @api stable
+ * @api
  */
 ol.source.TileWMS.prototype.getParams = function() {
   return this.params_;
@@ -204,7 +200,7 @@ ol.source.TileWMS.prototype.getParams = function() {
  * @private
  */
 ol.source.TileWMS.prototype.getRequestUrl_ = function(tileCoord, tileSize, tileExtent,
-        pixelRatio, projection, params) {
+    pixelRatio, projection, params) {
 
   var urls = this.urls;
   if (!urls) {
@@ -272,7 +268,7 @@ ol.source.TileWMS.prototype.getRequestUrl_ = function(tileCoord, tileSize, tileE
  */
 ol.source.TileWMS.prototype.getTilePixelRatio = function(pixelRatio) {
   return (!this.hidpi_ || this.serverType_ === undefined) ? 1 :
-      /** @type {number} */ (pixelRatio);
+  /** @type {number} */ (pixelRatio);
 };
 
 
@@ -367,7 +363,7 @@ ol.source.TileWMS.prototype.setUrls = function(urls) {
 /**
  * Update the user-provided params.
  * @param {Object} params Params.
- * @api stable
+ * @api
  */
 ol.source.TileWMS.prototype.updateParams = function(params) {
   ol.obj.assign(this.params_, params);

@@ -1,9 +1,11 @@
 goog.provide('ol.renderer.webgl.VectorLayer');
 
 goog.require('ol');
-goog.require('ol.View');
+goog.require('ol.LayerType');
+goog.require('ol.ViewHint');
 goog.require('ol.extent');
 goog.require('ol.render.webgl.ReplayGroup');
+goog.require('ol.renderer.Type');
 goog.require('ol.renderer.vector');
 goog.require('ol.renderer.webgl.Layer');
 goog.require('ol.transform');
@@ -14,6 +16,7 @@ goog.require('ol.transform');
  * @extends {ol.renderer.webgl.Layer}
  * @param {ol.renderer.webgl.Map} mapRenderer Map renderer.
  * @param {ol.layer.Vector} vectorLayer Vector layer.
+ * @api
  */
 ol.renderer.webgl.VectorLayer = function(mapRenderer, vectorLayer) {
 
@@ -67,17 +70,48 @@ ol.inherits(ol.renderer.webgl.VectorLayer, ol.renderer.webgl.Layer);
 
 
 /**
+ * Determine if this renderer handles the provided layer.
+ * @param {ol.renderer.Type} type The renderer type.
+ * @param {ol.layer.Layer} layer The candidate layer.
+ * @return {boolean} The renderer can render the layer.
+ */
+ol.renderer.webgl.VectorLayer['handles'] = function(type, layer) {
+  return type === ol.renderer.Type.WEBGL && layer.getType() === ol.LayerType.VECTOR;
+};
+
+
+/**
+ * Create a layer renderer.
+ * @param {ol.renderer.Map} mapRenderer The map renderer.
+ * @param {ol.layer.Layer} layer The layer to be rendererd.
+ * @return {ol.renderer.webgl.VectorLayer} The layer renderer.
+ */
+ol.renderer.webgl.VectorLayer['create'] = function(mapRenderer, layer) {
+  return new ol.renderer.webgl.VectorLayer(
+      /** @type {ol.renderer.webgl.Map} */ (mapRenderer),
+      /** @type {ol.layer.Vector} */ (layer)
+  );
+};
+
+
+/**
  * @inheritDoc
  */
 ol.renderer.webgl.VectorLayer.prototype.composeFrame = function(frameState, layerState, context) {
   this.layerState_ = layerState;
   var viewState = frameState.viewState;
   var replayGroup = this.replayGroup_;
+  var size = frameState.size;
+  var pixelRatio = frameState.pixelRatio;
+  var gl = this.mapRenderer.getGL();
   if (replayGroup && !replayGroup.isEmpty()) {
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(0, 0, size[0] * pixelRatio, size[1] * pixelRatio);
     replayGroup.replay(context,
         viewState.center, viewState.resolution, viewState.rotation,
-        frameState.size, frameState.pixelRatio, layerState.opacity,
+        size, pixelRatio, layerState.opacity,
         layerState.managed ? frameState.skippedFeatureUids : {});
+    gl.disable(gl.SCISSOR_TEST);
   }
 
 };
@@ -100,7 +134,7 @@ ol.renderer.webgl.VectorLayer.prototype.disposeInternal = function() {
 /**
  * @inheritDoc
  */
-ol.renderer.webgl.VectorLayer.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, callback, thisArg) {
+ol.renderer.webgl.VectorLayer.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, hitTolerance, callback, thisArg) {
   if (!this.replayGroup_ || !this.layerState_) {
     return undefined;
   } else {
@@ -148,13 +182,7 @@ ol.renderer.webgl.VectorLayer.prototype.hasFeatureAtCoordinate = function(coordi
 
 
 /**
- * @param {ol.Pixel} pixel Pixel.
- * @param {olx.FrameState} frameState FrameState.
- * @param {function(this: S, ol.layer.Layer, (Uint8ClampedArray|Uint8Array)): T} callback Layer
- *     callback.
- * @param {S} thisArg Value to use as `this` when executing `callback`.
- * @return {T|undefined} Callback result.
- * @template S,T,U
+ * @inheritDoc
  */
 ol.renderer.webgl.VectorLayer.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg) {
   var coordinate = ol.transform.apply(
@@ -191,8 +219,8 @@ ol.renderer.webgl.VectorLayer.prototype.prepareFrame = function(frameState, laye
       frameState.attributions, vectorSource.getAttributions());
   this.updateLogos(frameState, vectorSource);
 
-  var animating = frameState.viewHints[ol.View.Hint.ANIMATING];
-  var interacting = frameState.viewHints[ol.View.Hint.INTERACTING];
+  var animating = frameState.viewHints[ol.ViewHint.ANIMATING];
+  var interacting = frameState.viewHints[ol.ViewHint.INTERACTING];
   var updateWhileAnimating = vectorLayer.getUpdateWhileAnimating();
   var updateWhileInteracting = vectorLayer.getUpdateWhileInteracting();
 
@@ -299,7 +327,7 @@ ol.renderer.webgl.VectorLayer.prototype.renderFeature = function(feature, resolu
   }
   var loading = false;
   if (Array.isArray(styles)) {
-    for (var i = 0, ii = styles.length; i < ii; ++i) {
+    for (var i = styles.length - 1, ii = 0; i >= ii; --i) {
       loading = ol.renderer.vector.renderFeature(
           replayGroup, feature, styles[i],
           ol.renderer.vector.getSquaredTolerance(resolution, pixelRatio),

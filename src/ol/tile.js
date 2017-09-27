@@ -1,6 +1,7 @@
 goog.provide('ol.Tile');
 
 goog.require('ol');
+goog.require('ol.TileState');
 goog.require('ol.events.EventTarget');
 goog.require('ol.events.EventType');
 
@@ -10,9 +11,10 @@ goog.require('ol.events.EventType');
  * Base class for tiles.
  *
  * @constructor
+ * @abstract
  * @extends {ol.events.EventTarget}
  * @param {ol.TileCoord} tileCoord Tile coordinate.
- * @param {ol.Tile.State} state State.
+ * @param {ol.TileState} state State.
  */
 ol.Tile = function(tileCoord, state) {
 
@@ -25,7 +27,7 @@ ol.Tile = function(tileCoord, state) {
 
   /**
    * @protected
-   * @type {ol.Tile.State}
+   * @type {ol.TileState}
    */
   this.state = state;
 
@@ -58,14 +60,6 @@ ol.Tile.prototype.changed = function() {
 
 
 /**
- * Get the HTML image element for this tile (may be a Canvas, Image, or Video).
- * @abstract
- * @return {HTMLCanvasElement|HTMLImageElement|HTMLVideoElement} Image.
- */
-ol.Tile.prototype.getImage = function() {};
-
-
-/**
  * @return {string} Key.
  */
 ol.Tile.prototype.getKey = function() {
@@ -90,7 +84,7 @@ ol.Tile.prototype.getInterimTile = function() {
   // of the list (all those tiles correspond to older requests and will be
   // cleaned up by refreshInterimChain)
   do {
-    if (tile.getState() == ol.Tile.State.LOADED) {
+    if (tile.getState() == ol.TileState.LOADED) {
       return tile;
     }
     tile = tile.interimTile;
@@ -113,17 +107,17 @@ ol.Tile.prototype.refreshInterimChain = function() {
   var prev = this;
 
   do {
-    if (tile.getState() == ol.Tile.State.LOADED) {
+    if (tile.getState() == ol.TileState.LOADED) {
       //we have a loaded tile, we can discard the rest of the list
       //we would could abort any LOADING tile request
       //older than this tile (i.e. any LOADING tile following this entry in the chain)
       tile.interimTile = null;
       break;
-    } else if (tile.getState() == ol.Tile.State.LOADING) {
+    } else if (tile.getState() == ol.TileState.LOADING) {
       //keep this LOADING tile any loaded tiles later in the chain are
       //older than this tile, so we're still interested in the request
       prev = tile;
-    } else if (tile.getState() == ol.Tile.State.IDLE) {
+    } else if (tile.getState() == ol.TileState.IDLE) {
       //the head of the list is the most current tile, we don't need
       //to start any other requests for this chain
       prev.interimTile = tile.interimTile;
@@ -145,12 +139,19 @@ ol.Tile.prototype.getTileCoord = function() {
 
 
 /**
- * @return {ol.Tile.State} State.
+ * @return {ol.TileState} State.
  */
 ol.Tile.prototype.getState = function() {
   return this.state;
 };
 
+/**
+ * @param {ol.TileState} state State.
+ */
+ol.Tile.prototype.setState = function(state) {
+  this.state = state;
+  this.changed();
+};
 
 /**
  * Load the image or retry if loading previously failed.
@@ -160,16 +161,3 @@ ol.Tile.prototype.getState = function() {
  * @api
  */
 ol.Tile.prototype.load = function() {};
-
-
-/**
- * @enum {number}
- */
-ol.Tile.State = {
-  IDLE: 0,
-  LOADING: 1,
-  LOADED: 2,
-  ERROR: 3,
-  EMPTY: 4,
-  ABORT: 5
-};

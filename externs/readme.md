@@ -4,7 +4,7 @@ This directory contains externs files, which tell the Closure compiler about sym
 
 ## oli.js and olx.js
 
-These two files are special externs that belong to ol3, and this document explains their purpose and how they are used.
+These two files are special externs that belong to OpenLayers, and this document explains their purpose and how they are used.
 
 ### Prevent class properties from being renamed
 
@@ -53,7 +53,7 @@ For custom subclasses in applications, which can be created using `ol.inherits`,
 oli.control.Control = function() {};
 
 /**
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
  * @return {undefined} Undefined.
  */
 oli.control.Control.prototype.setMap = function(map) {};
@@ -74,7 +74,7 @@ ol.control.Control = function(options) {
 
 /**
  * Application subclasses may override this.
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
  * @api
  */
 ol.control.Control.prototype.setMap = function(map) {

@@ -1,4 +1,4 @@
-goog.provide('ol.test.interaction.Extent');
+
 
 goog.require('ol.Map');
 goog.require('ol.MapBrowserPointerEvent');
@@ -7,22 +7,13 @@ goog.require('ol.interaction.Extent');
 goog.require('ol.pointer.PointerEvent');
 
 describe('ol.interaction.Extent', function() {
-
-  var target, map, interaction;
+  var map, interaction;
 
   var width = 360;
   var height = 180;
 
-  beforeEach(function(done) {
-    target = document.createElement('div');
-
-    var style = target.style;
-    style.position = 'absolute';
-    style.left = '-1000px';
-    style.top = '-1000px';
-    style.width = width + 'px';
-    style.height = height + 'px';
-    document.body.appendChild(target);
+  beforeEach(function() {
+    var target = createMapDiv(width, height);
 
     map = new ol.Map({
       target: target,
@@ -33,18 +24,18 @@ describe('ol.interaction.Extent', function() {
         resolution: 1
       })
     });
-
-    map.once('postrender', function() {
-      done();
-    });
+    map.renderSync();
 
     interaction = new ol.interaction.Extent();
     map.addInteraction(interaction);
   });
 
   afterEach(function() {
-    map.dispose();
-    document.body.removeChild(target);
+    if (map) {
+      disposeMap(map);
+    }
+    map = null;
+    interaction = null;
   });
 
   /**
@@ -72,19 +63,33 @@ describe('ol.interaction.Extent', function() {
     event.pointerEvent.pointerId = 1;
     map.handleMapBrowserEvent(event);
   }
+
+  describe('Constructor', function() {
+
+    it('can be configured with an extent', function() {
+      expect(function() {
+        new ol.interaction.Extent({
+          extent: [-10, -10, 10, 10]
+        });
+      }).to.not.throwException();
+    });
+
+  });
+
   describe('snap to vertex', function() {
     it('snap to vertex works', function() {
-      interaction.setExtent([-50,-50,50,50]);
+      interaction.setExtent([-50, -50, 50, 50]);
 
-      expect(interaction.snapToVertex_([230,40], map)).to.eql([50,50]);
-      expect(interaction.snapToVertex_([231,41], map)).to.eql([50,50]);
+      expect(interaction.snapToVertex_([230, 40], map)).to.eql([50, 50]);
+      expect(interaction.snapToVertex_([231, 41], map)).to.eql([50, 50]);
     });
-    it('snap to edge works', function() {
-      interaction.setExtent([-50,-50,50,50]);
 
-      expect(interaction.snapToVertex_([230,90], map)).to.eql([50,0]);
-      expect(interaction.snapToVertex_([230,89], map)).to.eql([50,1]);
-      expect(interaction.snapToVertex_([231,90], map)).to.eql([50,0]);
+    it('snap to edge works', function() {
+      interaction.setExtent([-50, -50, 50, 50]);
+
+      expect(interaction.snapToVertex_([230, 90], map)).to.eql([50, 0]);
+      expect(interaction.snapToVertex_([230, 89], map)).to.eql([50, 1]);
+      expect(interaction.snapToVertex_([231, 90], map)).to.eql([50, 0]);
     });
   });
 
@@ -95,11 +100,11 @@ describe('ol.interaction.Extent', function() {
       simulateEvent('pointerdrag', 50, 50, false, 0);
       simulateEvent('pointerup', 50, 50, false, 0);
 
-      expect(interaction.getExtent()).to.eql([-50,-50,50,50]);
+      expect(interaction.getExtent()).to.eql([-50, -50, 50, 50]);
     });
 
     it('clicking off extent nulls extent', function() {
-      interaction.setExtent([-50,-50,50,50]);
+      interaction.setExtent([-50, -50, 50, 50]);
 
       simulateEvent('pointerdown', -10, -10, false, 0);
       simulateEvent('pointerup', -10, -10, false, 0);
@@ -108,32 +113,32 @@ describe('ol.interaction.Extent', function() {
     });
 
     it('clicking on extent does not null extent', function() {
-      interaction.setExtent([-50,-50,50,50]);
+      interaction.setExtent([-50, -50, 50, 50]);
 
       simulateEvent('pointerdown', 50, 50, false, 0);
       simulateEvent('pointerup', 50, 50, false, 0);
 
-      expect(interaction.getExtent()).to.eql([-50,-50,50,50]);
+      expect(interaction.getExtent()).to.eql([-50, -50, 50, 50]);
     });
 
     it('snap and drag vertex works', function() {
-      interaction.setExtent([-50,-50,50,50]);
+      interaction.setExtent([-50, -50, 50, 50]);
 
       simulateEvent('pointerdown', 51, 49, false, 0);
       simulateEvent('pointerdrag', -70, -40, false, 0);
       simulateEvent('pointerup', -70, -40, false, 0);
 
-      expect(interaction.getExtent()).to.eql([-70,-50,-50,-40]);
+      expect(interaction.getExtent()).to.eql([-70, -50, -50, -40]);
     });
 
     it('snap and drag edge works', function() {
-      interaction.setExtent([-50,-50,50,50]);
+      interaction.setExtent([-50, -50, 50, 50]);
 
       simulateEvent('pointerdown', 51, 5, false, 0);
       simulateEvent('pointerdrag', 20, -30, false, 0);
       simulateEvent('pointerup', 20, -30, false, 0);
 
-      expect(interaction.getExtent()).to.eql([-50,-50,20,50]);
+      expect(interaction.getExtent()).to.eql([-50, -50, 20, 50]);
     });
   });
 });

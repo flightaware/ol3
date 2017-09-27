@@ -1,4 +1,4 @@
-goog.provide('ol.test.object');
+
 
 goog.require('ol.obj');
 
@@ -29,6 +29,18 @@ describe('ol.obj.assign()', function() {
     expect(assigned.sourceProp2).to.be('sourceValue2');
     expect(assigned.targetProp1).to.be('targetValue1');
 
+  });
+
+  it('throws a TypeError with `undefined` as target', function() {
+    expect(ol.obj.assign).withArgs(undefined).to.throwException(function(e) {
+      expect(e).to.be.a(TypeError);
+    });
+  });
+
+  it('throws a TypeError with `null` as target', function() {
+    expect(ol.obj.assign).withArgs(null).to.throwException(function(e) {
+      expect(e).to.be.a(TypeError);
+    });
   });
 
 });

@@ -2,8 +2,8 @@ goog.provide('ol.source.TileImage');
 
 goog.require('ol');
 goog.require('ol.ImageTile');
-goog.require('ol.Tile');
 goog.require('ol.TileCache');
+goog.require('ol.TileState');
 goog.require('ol.events');
 goog.require('ol.events.EventType');
 goog.require('ol.proj');
@@ -34,7 +34,7 @@ ol.source.TileImage = function(options) {
     state: options.state,
     tileGrid: options.tileGrid,
     tileLoadFunction: options.tileLoadFunction ?
-        options.tileLoadFunction : ol.source.TileImage.defaultTileLoadFunction,
+      options.tileLoadFunction : ol.source.TileImage.defaultTileLoadFunction,
     tilePixelRatio: options.tilePixelRatio,
     tileUrlFunction: options.tileUrlFunction,
     url: options.url,
@@ -51,11 +51,11 @@ ol.source.TileImage = function(options) {
 
   /**
    * @protected
-   * @type {function(new: ol.ImageTile, ol.TileCoord, ol.Tile.State, string,
+   * @type {function(new: ol.ImageTile, ol.TileCoord, ol.TileState, string,
    *        ?string, ol.TileLoadFunctionType)}
    */
   this.tileClass = options.tileClass !== undefined ?
-      options.tileClass : ol.ImageTile;
+    options.tileClass : ol.ImageTile;
 
   /**
    * @protected
@@ -194,7 +194,7 @@ ol.source.TileImage.prototype.getTileCacheForProjection = function(projection) {
   } else {
     var projKey = ol.getUid(projection).toString();
     if (!(projKey in this.tileCacheForProjection)) {
-      this.tileCacheForProjection[projKey] = new ol.TileCache();
+      this.tileCacheForProjection[projKey] = new ol.TileCache(this.tileCache.highWaterMark);
     }
     return this.tileCacheForProjection[projKey];
   }
@@ -216,10 +216,10 @@ ol.source.TileImage.prototype.createTile_ = function(z, x, y, pixelRatio, projec
   var urlTileCoord = this.getTileCoordForTileUrlFunction(
       tileCoord, projection);
   var tileUrl = urlTileCoord ?
-      this.tileUrlFunction(urlTileCoord, pixelRatio, projection) : undefined;
+    this.tileUrlFunction(urlTileCoord, pixelRatio, projection) : undefined;
   var tile = new this.tileClass(
       tileCoord,
-      tileUrl !== undefined ? ol.Tile.State.IDLE : ol.Tile.State.EMPTY,
+      tileUrl !== undefined ? ol.TileState.IDLE : ol.TileState.EMPTY,
       tileUrl !== undefined ? tileUrl : '',
       this.crossOrigin,
       this.tileLoadFunction);
@@ -269,6 +269,7 @@ ol.source.TileImage.prototype.getTile = function(z, x, y, pixelRatio, projection
 
       if (tile) {
         newTile.interimTile = tile;
+        newTile.refreshInterimChain();
         cache.replace(tileCoordKey, newTile);
       } else {
         cache.set(tileCoordKey, newTile);
@@ -305,7 +306,7 @@ ol.source.TileImage.prototype.getTileInternal = function(z, x, y, pixelRatio, pr
       tile = this.createTile_(z, x, y, pixelRatio, projection, key);
 
       //make the new tile the head of the list,
-      if (interimTile.getState() == ol.Tile.State.IDLE) {
+      if (interimTile.getState() == ol.TileState.IDLE) {
         //the old tile hasn't begun loading yet, and is now outdated, so we can simply discard it
         tile.interimTile = interimTile.interimTile;
       } else {

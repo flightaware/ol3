@@ -1,10 +1,10 @@
 goog.provide('ol.control.Control');
 
-goog.require('ol.events');
 goog.require('ol');
-goog.require('ol.MapEvent');
+goog.require('ol.MapEventType');
 goog.require('ol.Object');
 goog.require('ol.dom');
+goog.require('ol.events');
 
 
 /**
@@ -34,7 +34,7 @@ goog.require('ol.dom');
  * @extends {ol.Object}
  * @implements {oli.control.Control}
  * @param {olx.control.ControlOptions} options Control options.
- * @api stable
+ * @api
  */
 ol.control.Control = function(options) {
 
@@ -54,7 +54,7 @@ ol.control.Control = function(options) {
 
   /**
    * @private
-   * @type {ol.Map}
+   * @type {ol.PluggableMap}
    */
   this.map_ = null;
 
@@ -88,8 +88,8 @@ ol.control.Control.prototype.disposeInternal = function() {
 
 /**
  * Get the map associated with this control.
- * @return {ol.Map} Map.
- * @api stable
+ * @return {ol.PluggableMap} Map.
+ * @api
  */
 ol.control.Control.prototype.getMap = function() {
   return this.map_;
@@ -100,8 +100,9 @@ ol.control.Control.prototype.getMap = function() {
  * Remove the control from its current map and attach it to the new map.
  * Subclasses may set up event handlers to get notified about changes to
  * the map here.
- * @param {ol.Map} map Map.
- * @api stable
+ * @param {ol.PluggableMap} map Map.
+ * @override
+ * @api
  */
 ol.control.Control.prototype.setMap = function(map) {
   if (this.map_) {
@@ -114,11 +115,11 @@ ol.control.Control.prototype.setMap = function(map) {
   this.map_ = map;
   if (this.map_) {
     var target = this.target_ ?
-        this.target_ : map.getOverlayContainerStopEvent();
+      this.target_ : map.getOverlayContainerStopEvent();
     target.appendChild(this.element);
     if (this.render !== ol.nullFunction) {
       this.listenerKeys.push(ol.events.listen(map,
-          ol.MapEvent.Type.POSTRENDER, this.render, this));
+          ol.MapEventType.POSTRENDER, this.render, this));
     }
     map.render();
   }

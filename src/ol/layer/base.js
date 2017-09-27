@@ -1,24 +1,10 @@
 goog.provide('ol.layer.Base');
-goog.provide('ol.layer.LayerProperty');
 
 goog.require('ol');
 goog.require('ol.Object');
+goog.require('ol.layer.Property');
 goog.require('ol.math');
 goog.require('ol.obj');
-
-
-/**
- * @enum {string}
- */
-ol.layer.LayerProperty = {
-  OPACITY: 'opacity',
-  VISIBLE: 'visible',
-  EXTENT: 'extent',
-  Z_INDEX: 'zIndex',
-  MAX_RESOLUTION: 'maxResolution',
-  MIN_RESOLUTION: 'minResolution',
-  SOURCE: 'source'
-};
 
 
 /**
@@ -30,9 +16,10 @@ ol.layer.LayerProperty = {
  * is observable, and has get/set accessors.
  *
  * @constructor
+ * @abstract
  * @extends {ol.Object}
  * @param {olx.layer.BaseOptions} options Layer options.
- * @api stable
+ * @api
  */
 ol.layer.Base = function(options) {
 
@@ -42,15 +29,15 @@ ol.layer.Base = function(options) {
    * @type {Object.<string, *>}
    */
   var properties = ol.obj.assign({}, options);
-  properties[ol.layer.LayerProperty.OPACITY] =
+  properties[ol.layer.Property.OPACITY] =
       options.opacity !== undefined ? options.opacity : 1;
-  properties[ol.layer.LayerProperty.VISIBLE] =
+  properties[ol.layer.Property.VISIBLE] =
       options.visible !== undefined ? options.visible : true;
-  properties[ol.layer.LayerProperty.Z_INDEX] =
+  properties[ol.layer.Property.Z_INDEX] =
       options.zIndex !== undefined ? options.zIndex : 0;
-  properties[ol.layer.LayerProperty.MAX_RESOLUTION] =
+  properties[ol.layer.Property.MAX_RESOLUTION] =
       options.maxResolution !== undefined ? options.maxResolution : Infinity;
-  properties[ol.layer.LayerProperty.MIN_RESOLUTION] =
+  properties[ol.layer.Property.MIN_RESOLUTION] =
       options.minResolution !== undefined ? options.minResolution : 0;
 
   this.setProperties(properties);
@@ -64,8 +51,24 @@ ol.layer.Base = function(options) {
     managed: true
   });
 
+  /**
+   * The layer type.
+   * @type {ol.LayerType}
+   * @protected;
+   */
+  this.type;
+
 };
 ol.inherits(ol.layer.Base, ol.Object);
+
+
+/**
+ * Get the layer type (used when creating a layer renderer).
+ * @return {ol.LayerType} The layer type.
+ */
+ol.layer.Base.prototype.getType = function() {
+  return this.type;
+};
 
 
 /**
@@ -107,11 +110,11 @@ ol.layer.Base.prototype.getLayerStatesArray = function(opt_states) {};
  * will be visible regardless of extent.
  * @return {ol.Extent|undefined} The layer extent.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.getExtent = function() {
   return /** @type {ol.Extent|undefined} */ (
-      this.get(ol.layer.LayerProperty.EXTENT));
+    this.get(ol.layer.Property.EXTENT));
 };
 
 
@@ -119,11 +122,11 @@ ol.layer.Base.prototype.getExtent = function() {
  * Return the maximum resolution of the layer.
  * @return {number} The maximum resolution of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.getMaxResolution = function() {
   return /** @type {number} */ (
-      this.get(ol.layer.LayerProperty.MAX_RESOLUTION));
+    this.get(ol.layer.Property.MAX_RESOLUTION));
 };
 
 
@@ -131,11 +134,11 @@ ol.layer.Base.prototype.getMaxResolution = function() {
  * Return the minimum resolution of the layer.
  * @return {number} The minimum resolution of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.getMinResolution = function() {
   return /** @type {number} */ (
-      this.get(ol.layer.LayerProperty.MIN_RESOLUTION));
+    this.get(ol.layer.Property.MIN_RESOLUTION));
 };
 
 
@@ -143,10 +146,10 @@ ol.layer.Base.prototype.getMinResolution = function() {
  * Return the opacity of the layer (between 0 and 1).
  * @return {number} The opacity of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.getOpacity = function() {
-  return /** @type {number} */ (this.get(ol.layer.LayerProperty.OPACITY));
+  return /** @type {number} */ (this.get(ol.layer.Property.OPACITY));
 };
 
 
@@ -161,10 +164,10 @@ ol.layer.Base.prototype.getSourceState = function() {};
  * Return the visibility of the layer (`true` or `false`).
  * @return {boolean} The visibility of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.getVisible = function() {
-  return /** @type {boolean} */ (this.get(ol.layer.LayerProperty.VISIBLE));
+  return /** @type {boolean} */ (this.get(ol.layer.Property.VISIBLE));
 };
 
 
@@ -176,7 +179,7 @@ ol.layer.Base.prototype.getVisible = function() {
  * @api
  */
 ol.layer.Base.prototype.getZIndex = function() {
-  return /** @type {number} */ (this.get(ol.layer.LayerProperty.Z_INDEX));
+  return /** @type {number} */ (this.get(ol.layer.Property.Z_INDEX));
 };
 
 
@@ -185,10 +188,10 @@ ol.layer.Base.prototype.getZIndex = function() {
  * will be visible at all extents.
  * @param {ol.Extent|undefined} extent The extent of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.setExtent = function(extent) {
-  this.set(ol.layer.LayerProperty.EXTENT, extent);
+  this.set(ol.layer.Property.EXTENT, extent);
 };
 
 
@@ -196,10 +199,10 @@ ol.layer.Base.prototype.setExtent = function(extent) {
  * Set the maximum resolution at which the layer is visible.
  * @param {number} maxResolution The maximum resolution of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.setMaxResolution = function(maxResolution) {
-  this.set(ol.layer.LayerProperty.MAX_RESOLUTION, maxResolution);
+  this.set(ol.layer.Property.MAX_RESOLUTION, maxResolution);
 };
 
 
@@ -207,10 +210,10 @@ ol.layer.Base.prototype.setMaxResolution = function(maxResolution) {
  * Set the minimum resolution at which the layer is visible.
  * @param {number} minResolution The minimum resolution of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.setMinResolution = function(minResolution) {
-  this.set(ol.layer.LayerProperty.MIN_RESOLUTION, minResolution);
+  this.set(ol.layer.Property.MIN_RESOLUTION, minResolution);
 };
 
 
@@ -218,10 +221,10 @@ ol.layer.Base.prototype.setMinResolution = function(minResolution) {
  * Set the opacity of the layer, allowed values range from 0 to 1.
  * @param {number} opacity The opacity of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.setOpacity = function(opacity) {
-  this.set(ol.layer.LayerProperty.OPACITY, opacity);
+  this.set(ol.layer.Property.OPACITY, opacity);
 };
 
 
@@ -229,10 +232,10 @@ ol.layer.Base.prototype.setOpacity = function(opacity) {
  * Set the visibility of the layer (`true` or `false`).
  * @param {boolean} visible The visibility of the layer.
  * @observable
- * @api stable
+ * @api
  */
 ol.layer.Base.prototype.setVisible = function(visible) {
-  this.set(ol.layer.LayerProperty.VISIBLE, visible);
+  this.set(ol.layer.Property.VISIBLE, visible);
 };
 
 
@@ -244,5 +247,5 @@ ol.layer.Base.prototype.setVisible = function(visible) {
  * @api
  */
 ol.layer.Base.prototype.setZIndex = function(zindex) {
-  this.set(ol.layer.LayerProperty.Z_INDEX, zindex);
+  this.set(ol.layer.Property.Z_INDEX, zindex);
 };

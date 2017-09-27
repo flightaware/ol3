@@ -1,11 +1,12 @@
 goog.provide('ol.renderer.webgl.ImageLayer');
 
 goog.require('ol');
-goog.require('ol.View');
+goog.require('ol.LayerType');
+goog.require('ol.ViewHint');
 goog.require('ol.dom');
 goog.require('ol.extent');
 goog.require('ol.functions');
-goog.require('ol.proj');
+goog.require('ol.renderer.Type');
 goog.require('ol.renderer.webgl.Layer');
 goog.require('ol.source.ImageVector');
 goog.require('ol.transform');
@@ -18,6 +19,7 @@ goog.require('ol.webgl.Context');
  * @extends {ol.renderer.webgl.Layer}
  * @param {ol.renderer.webgl.Map} mapRenderer Map renderer.
  * @param {ol.layer.Image} imageLayer Tile layer.
+ * @api
  */
 ol.renderer.webgl.ImageLayer = function(mapRenderer, imageLayer) {
 
@@ -47,6 +49,31 @@ ol.inherits(ol.renderer.webgl.ImageLayer, ol.renderer.webgl.Layer);
 
 
 /**
+ * Determine if this renderer handles the provided layer.
+ * @param {ol.renderer.Type} type The renderer type.
+ * @param {ol.layer.Layer} layer The candidate layer.
+ * @return {boolean} The renderer can render the layer.
+ */
+ol.renderer.webgl.ImageLayer['handles'] = function(type, layer) {
+  return type === ol.renderer.Type.WEBGL && layer.getType() === ol.LayerType.IMAGE;
+};
+
+
+/**
+ * Create a layer renderer.
+ * @param {ol.renderer.Map} mapRenderer The map renderer.
+ * @param {ol.layer.Layer} layer The layer to be rendererd.
+ * @return {ol.renderer.webgl.ImageLayer} The layer renderer.
+ */
+ol.renderer.webgl.ImageLayer['create'] = function(mapRenderer, layer) {
+  return new ol.renderer.webgl.ImageLayer(
+      /** @type {ol.renderer.webgl.Map} */ (mapRenderer),
+      /** @type {ol.layer.Image} */ (layer)
+  );
+};
+
+
+/**
  * @param {ol.ImageBase} image Image.
  * @private
  * @return {WebGLTexture} Texture.
@@ -68,14 +95,14 @@ ol.renderer.webgl.ImageLayer.prototype.createTexture_ = function(image) {
 /**
  * @inheritDoc
  */
-ol.renderer.webgl.ImageLayer.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, callback, thisArg) {
+ol.renderer.webgl.ImageLayer.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, hitTolerance, callback, thisArg) {
   var layer = this.getLayer();
   var source = layer.getSource();
   var resolution = frameState.viewState.resolution;
   var rotation = frameState.viewState.rotation;
   var skippedFeatureUids = frameState.skippedFeatureUids;
   return source.forEachFeatureAtCoordinate(
-      coordinate, resolution, rotation, skippedFeatureUids,
+      coordinate, resolution, rotation, hitTolerance, skippedFeatureUids,
 
       /**
        * @param {ol.Feature|ol.render.Feature} feature Feature.
@@ -112,14 +139,12 @@ ol.renderer.webgl.ImageLayer.prototype.prepareFrame = function(frameState, layer
     renderedExtent = ol.extent.getIntersection(
         renderedExtent, layerState.extent);
   }
-  if (!hints[ol.View.Hint.ANIMATING] && !hints[ol.View.Hint.INTERACTING] &&
+  if (!hints[ol.ViewHint.ANIMATING] && !hints[ol.ViewHint.INTERACTING] &&
       !ol.extent.isEmpty(renderedExtent)) {
     var projection = viewState.projection;
     if (!ol.ENABLE_RASTER_REPROJECTION) {
       var sourceProjection = imageSource.getProjection();
       if (sourceProjection) {
-        ol.DEBUG && console.assert(ol.proj.equivalent(projection, sourceProjection),
-            'projection and sourceProjection are equivalent');
         projection = sourceProjection;
       }
     }
@@ -141,7 +166,7 @@ ol.renderer.webgl.ImageLayer.prototype.prepareFrame = function(frameState, layer
             }
           }.bind(null, gl, this.texture);
           frameState.postRenderFunctions.push(
-            /** @type {ol.PostRenderFunction} */ (postRenderFunction)
+              /** @type {ol.PostRenderFunction} */ (postRenderFunction)
           );
         }
       }
@@ -149,8 +174,6 @@ ol.renderer.webgl.ImageLayer.prototype.prepareFrame = function(frameState, layer
   }
 
   if (image) {
-    ol.DEBUG && console.assert(texture, 'texture is truthy');
-
     var canvas = this.mapRenderer.getContext().getCanvas();
 
     this.updateProjectionMatrix_(canvas.width, canvas.height,
@@ -171,7 +194,7 @@ ol.renderer.webgl.ImageLayer.prototype.prepareFrame = function(frameState, layer
     this.updateLogos(frameState, imageSource);
   }
 
-  return true;
+  return !!image;
 };
 
 
@@ -186,7 +209,7 @@ ol.renderer.webgl.ImageLayer.prototype.prepareFrame = function(frameState, layer
  * @private
  */
 ol.renderer.webgl.ImageLayer.prototype.updateProjectionMatrix_ = function(canvasWidth, canvasHeight, pixelRatio,
-        viewCenter, viewResolution, viewRotation, imageExtent) {
+    viewCenter, viewResolution, viewRotation, imageExtent) {
 
   var canvasExtentWidth = canvasWidth * viewResolution;
   var canvasExtentHeight = canvasHeight * viewResolution;
@@ -213,19 +236,13 @@ ol.renderer.webgl.ImageLayer.prototype.updateProjectionMatrix_ = function(canvas
  */
 ol.renderer.webgl.ImageLayer.prototype.hasFeatureAtCoordinate = function(coordinate, frameState) {
   var hasFeature = this.forEachFeatureAtCoordinate(
-      coordinate, frameState, ol.functions.TRUE, this);
+      coordinate, frameState, 0, ol.functions.TRUE, this);
   return hasFeature !== undefined;
 };
 
 
 /**
- * @param {ol.Pixel} pixel Pixel.
- * @param {olx.FrameState} frameState FrameState.
- * @param {function(this: S, ol.layer.Layer, (Uint8ClampedArray|Uint8Array)): T} callback Layer
- *     callback.
- * @param {S} thisArg Value to use as `this` when executing `callback`.
- * @return {T|undefined} Callback result.
- * @template S,T,U
+ * @inheritDoc
  */
 ol.renderer.webgl.ImageLayer.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg) {
   if (!this.image_ || !this.image_.getImage()) {
@@ -238,7 +255,7 @@ ol.renderer.webgl.ImageLayer.prototype.forEachLayerAtPixel = function(pixel, fra
     var coordinate = ol.transform.apply(
         frameState.pixelToCoordinateTransform, pixel.slice());
     var hasFeature = this.forEachFeatureAtCoordinate(
-        coordinate, frameState, ol.functions.TRUE, this);
+        coordinate, frameState, 0, ol.functions.TRUE, this);
 
     if (hasFeature) {
       return callback.call(thisArg, this.getLayer(), null);

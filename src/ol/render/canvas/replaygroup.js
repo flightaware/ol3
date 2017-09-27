@@ -7,6 +7,7 @@ goog.require('ol.extent');
 goog.require('ol.geom.flat.transform');
 goog.require('ol.obj');
 goog.require('ol.render.ReplayGroup');
+goog.require('ol.render.canvas.Replay');
 goog.require('ol.render.canvas.ImageReplay');
 goog.require('ol.render.canvas.LineStringReplay');
 goog.require('ol.render.canvas.PolygonReplay');
@@ -21,12 +22,13 @@ goog.require('ol.transform');
  * @param {number} tolerance Tolerance.
  * @param {ol.Extent} maxExtent Max extent.
  * @param {number} resolution Resolution.
+ * @param {number} pixelRatio Pixel ratio.
  * @param {boolean} overlaps The replay group can have overlapping geometries.
  * @param {number=} opt_renderBuffer Optional rendering buffer.
  * @struct
  */
 ol.render.canvas.ReplayGroup = function(
-    tolerance, maxExtent, resolution, overlaps, opt_renderBuffer) {
+    tolerance, maxExtent, resolution, pixelRatio, overlaps, opt_renderBuffer) {
   ol.render.ReplayGroup.call(this);
 
   /**
@@ -46,6 +48,12 @@ ol.render.canvas.ReplayGroup = function(
    * @type {boolean}
    */
   this.overlaps_ = overlaps;
+
+  /**
+   * @private
+   * @type {number}
+   */
+  this.pixelRatio_ = pixelRatio;
 
   /**
    * @private
@@ -77,9 +85,106 @@ ol.render.canvas.ReplayGroup = function(
    * @type {ol.Transform}
    */
   this.hitDetectionTransform_ = ol.transform.create();
-
 };
 ol.inherits(ol.render.canvas.ReplayGroup, ol.render.ReplayGroup);
+
+
+/**
+ * This cache is used for storing calculated pixel circles for increasing performance.
+ * It is a static property to allow each Replaygroup to access it.
+ * @type {Object.<number, Array.<Array.<(boolean|undefined)>>>}
+ * @private
+ */
+ol.render.canvas.ReplayGroup.circleArrayCache_ = {
+  0: [[true]]
+};
+
+
+/**
+ * This method fills a row in the array from the given coordinate to the
+ * middle with `true`.
+ * @param {Array.<Array.<(boolean|undefined)>>} array The array that will be altered.
+ * @param {number} x X coordinate.
+ * @param {number} y Y coordinate.
+ * @private
+ */
+ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_ = function(array, x, y) {
+  var i;
+  var radius = Math.floor(array.length / 2);
+  if (x >= radius) {
+    for (i = radius; i < x; i++) {
+      array[i][y] = true;
+    }
+  } else if (x < radius) {
+    for (i = x + 1; i < radius; i++) {
+      array[i][y] = true;
+    }
+  }
+};
+
+
+/**
+ * This methods creates a circle inside a fitting array. Points inside the
+ * circle are marked by true, points on the outside are undefined.
+ * It uses the midpoint circle algorithm.
+ * A cache is used to increase performance.
+ * @param {number} radius Radius.
+ * @returns {Array.<Array.<(boolean|undefined)>>} An array with marked circle points.
+ * @private
+ */
+ol.render.canvas.ReplayGroup.getCircleArray_ = function(radius) {
+  if (ol.render.canvas.ReplayGroup.circleArrayCache_[radius] !== undefined) {
+    return ol.render.canvas.ReplayGroup.circleArrayCache_[radius];
+  }
+
+  var arraySize = radius * 2 + 1;
+  var arr = new Array(arraySize);
+  for (var i = 0; i < arraySize; i++) {
+    arr[i] = new Array(arraySize);
+  }
+
+  var x = radius;
+  var y = 0;
+  var error = 0;
+
+  while (x >= y) {
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius + x, radius + y);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius + y, radius + x);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius - y, radius + x);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius - x, radius + y);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius - x, radius - y);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius - y, radius - x);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius + y, radius - x);
+    ol.render.canvas.ReplayGroup.fillCircleArrayRowToMiddle_(arr, radius + x, radius - y);
+
+    y++;
+    error += 1 + 2 * y;
+    if (2 * (error - x) + 1 > 0) {
+      x -= 1;
+      error += 1 - 2 * x;
+    }
+  }
+
+  ol.render.canvas.ReplayGroup.circleArrayCache_[radius] = arr;
+  return arr;
+};
+
+
+/**
+ * @param {Array.<ol.render.ReplayType>} replays Replays.
+ * @return {boolean} Has replays of the provided types.
+ */
+ol.render.canvas.ReplayGroup.prototype.hasReplays = function(replays) {
+  for (var zIndex in this.replaysByZIndex_) {
+    var candidates = this.replaysByZIndex_[zIndex];
+    for (var i = 0, ii = replays.length; i < ii; ++i) {
+      if (replays[i] in candidates) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 
 
 /**
@@ -101,6 +206,7 @@ ol.render.canvas.ReplayGroup.prototype.finish = function() {
  * @param {ol.Coordinate} coordinate Coordinate.
  * @param {number} resolution Resolution.
  * @param {number} rotation Rotation.
+ * @param {number} hitTolerance Hit tolerance in pixels.
  * @param {Object.<string, boolean>} skippedFeaturesHash Ids of features
  *     to skip.
  * @param {function((ol.Feature|ol.render.Feature)): T} callback Feature
@@ -109,16 +215,23 @@ ol.render.canvas.ReplayGroup.prototype.finish = function() {
  * @template T
  */
 ol.render.canvas.ReplayGroup.prototype.forEachFeatureAtCoordinate = function(
-    coordinate, resolution, rotation, skippedFeaturesHash, callback) {
+    coordinate, resolution, rotation, hitTolerance, skippedFeaturesHash, callback) {
 
+  hitTolerance = Math.round(hitTolerance);
+  var contextSize = hitTolerance * 2 + 1;
   var transform = ol.transform.compose(this.hitDetectionTransform_,
-      0.5, 0.5,
+      hitTolerance + 0.5, hitTolerance + 0.5,
       1 / resolution, -1 / resolution,
       -rotation,
       -coordinate[0], -coordinate[1]);
-
   var context = this.hitDetectionContext_;
-  context.clearRect(0, 0, 1, 1);
+
+  if (context.canvas.width !== contextSize || context.canvas.height !== contextSize) {
+    context.canvas.width = contextSize;
+    context.canvas.height = contextSize;
+  } else {
+    context.clearRect(0, 0, contextSize, contextSize);
+  }
 
   /**
    * @type {ol.Extent}
@@ -127,8 +240,10 @@ ol.render.canvas.ReplayGroup.prototype.forEachFeatureAtCoordinate = function(
   if (this.renderBuffer_ !== undefined) {
     hitExtent = ol.extent.createEmpty();
     ol.extent.extendCoordinate(hitExtent, coordinate);
-    ol.extent.buffer(hitExtent, resolution * this.renderBuffer_, hitExtent);
+    ol.extent.buffer(hitExtent, resolution * (this.renderBuffer_ + hitTolerance), hitExtent);
   }
+
+  var mask = ol.render.canvas.ReplayGroup.getCircleArray_(hitTolerance);
 
   return this.replayHitDetection_(context, transform, rotation,
       skippedFeaturesHash,
@@ -137,15 +252,40 @@ ol.render.canvas.ReplayGroup.prototype.forEachFeatureAtCoordinate = function(
        * @return {?} Callback result.
        */
       function(feature) {
-        var imageData = context.getImageData(0, 0, 1, 1).data;
-        if (imageData[3] > 0) {
-          var result = callback(feature);
-          if (result) {
-            return result;
+        var imageData = context.getImageData(0, 0, contextSize, contextSize).data;
+        for (var i = 0; i < contextSize; i++) {
+          for (var j = 0; j < contextSize; j++) {
+            if (mask[i][j]) {
+              if (imageData[(j * contextSize + i) * 4 + 3] > 0) {
+                var result = callback(feature);
+                if (result) {
+                  return result;
+                } else {
+                  context.clearRect(0, 0, contextSize, contextSize);
+                  return undefined;
+                }
+              }
+            }
           }
-          context.clearRect(0, 0, 1, 1);
         }
       }, hitExtent);
+};
+
+
+/**
+ * @param {ol.Transform} transform Transform.
+ * @return {Array.<number>} Clip coordinates.
+ */
+ol.render.canvas.ReplayGroup.prototype.getClipCoords = function(transform) {
+  var maxExtent = this.maxExtent_;
+  var minX = maxExtent[0];
+  var minY = maxExtent[1];
+  var maxX = maxExtent[2];
+  var maxY = maxExtent[3];
+  var flatClipCoords = [minX, minY, minX, maxY, maxX, maxY, maxX, minY];
+  ol.geom.flat.transform.transform2D(
+      flatClipCoords, 0, 8, 2, transform, flatClipCoords);
+  return flatClipCoords;
 };
 
 
@@ -162,11 +302,8 @@ ol.render.canvas.ReplayGroup.prototype.getReplay = function(zIndex, replayType) 
   var replay = replays[replayType];
   if (replay === undefined) {
     var Constructor = ol.render.canvas.ReplayGroup.BATCH_CONSTRUCTORS_[replayType];
-    ol.DEBUG && console.assert(Constructor !== undefined,
-        replayType +
-        ' constructor missing from ol.render.canvas.ReplayGroup.BATCH_CONSTRUCTORS_');
     replay = new Constructor(this.tolerance_, this.maxExtent_,
-        this.resolution_, this.overlaps_);
+        this.resolution_, this.pixelRatio_, this.overlaps_);
     replays[replayType] = replay;
   }
   return replay;
@@ -183,7 +320,6 @@ ol.render.canvas.ReplayGroup.prototype.isEmpty = function() {
 
 /**
  * @param {CanvasRenderingContext2D} context Context.
- * @param {number} pixelRatio Pixel ratio.
  * @param {ol.Transform} transform Transform.
  * @param {number} viewRotation View rotation.
  * @param {Object.<string, boolean>} skippedFeaturesHash Ids of features
@@ -191,7 +327,7 @@ ol.render.canvas.ReplayGroup.prototype.isEmpty = function() {
  * @param {Array.<ol.render.ReplayType>=} opt_replayTypes Ordered replay types
  *     to replay. Default is {@link ol.render.replay.ORDER}
  */
-ol.render.canvas.ReplayGroup.prototype.replay = function(context, pixelRatio,
+ol.render.canvas.ReplayGroup.prototype.replay = function(context,
     transform, viewRotation, skippedFeaturesHash, opt_replayTypes) {
 
   /** @type {Array.<number>} */
@@ -200,14 +336,7 @@ ol.render.canvas.ReplayGroup.prototype.replay = function(context, pixelRatio,
 
   // setup clipping so that the parts of over-simplified geometries are not
   // visible outside the current extent when panning
-  var maxExtent = this.maxExtent_;
-  var minX = maxExtent[0];
-  var minY = maxExtent[1];
-  var maxX = maxExtent[2];
-  var maxY = maxExtent[3];
-  var flatClipCoords = [minX, minY, minX, maxY, maxX, maxY, maxX, minY];
-  ol.geom.flat.transform.transform2D(
-      flatClipCoords, 0, 8, 2, transform, flatClipCoords);
+  var flatClipCoords = this.getClipCoords(transform);
   context.save();
   context.beginPath();
   context.moveTo(flatClipCoords[0], flatClipCoords[1]);
@@ -223,8 +352,7 @@ ol.render.canvas.ReplayGroup.prototype.replay = function(context, pixelRatio,
     for (j = 0, jj = replayTypes.length; j < jj; ++j) {
       replay = replays[replayTypes[j]];
       if (replay !== undefined) {
-        replay.replay(context, pixelRatio, transform, viewRotation,
-            skippedFeaturesHash);
+        replay.replay(context, transform, viewRotation, skippedFeaturesHash);
       }
     }
   }
@@ -279,9 +407,11 @@ ol.render.canvas.ReplayGroup.prototype.replayHitDetection_ = function(
  * @private
  * @type {Object.<ol.render.ReplayType,
  *                function(new: ol.render.canvas.Replay, number, ol.Extent,
- *                number, boolean)>}
+ *                number, number, boolean)>}
  */
 ol.render.canvas.ReplayGroup.BATCH_CONSTRUCTORS_ = {
+  'Circle': ol.render.canvas.PolygonReplay,
+  'Default': ol.render.canvas.Replay,
   'Image': ol.render.canvas.ImageReplay,
   'LineString': ol.render.canvas.LineStringReplay,
   'Polygon': ol.render.canvas.PolygonReplay,

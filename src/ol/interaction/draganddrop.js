@@ -19,7 +19,7 @@ goog.require('ol.proj');
  * @extends {ol.interaction.Interaction}
  * @fires ol.interaction.DragAndDrop.Event
  * @param {olx.interaction.DragAndDropOptions=} opt_options Options.
- * @api stable
+ * @api
  */
 ol.interaction.DragAndDrop = function(opt_options) {
 
@@ -34,20 +34,26 @@ ol.interaction.DragAndDrop = function(opt_options) {
    * @type {Array.<function(new: ol.format.Feature)>}
    */
   this.formatConstructors_ = options.formatConstructors ?
-      options.formatConstructors : [];
+    options.formatConstructors : [];
 
   /**
    * @private
    * @type {ol.proj.Projection}
    */
   this.projection_ = options.projection ?
-      ol.proj.get(options.projection) : null;
+    ol.proj.get(options.projection) : null;
 
   /**
    * @private
    * @type {Array.<ol.EventsKey>}
    */
   this.dropListenKeys_ = null;
+
+  /**
+   * @private
+   * @type {ol.source.Vector}
+   */
+  this.source_ = options.source || null;
 
   /**
    * @private
@@ -100,14 +106,20 @@ ol.interaction.DragAndDrop.prototype.handleResult_ = function(file, event) {
   if (!projection) {
     var view = map.getView();
     projection = view.getProjection();
-    ol.DEBUG && console.assert(projection !== undefined,
-        'projection should be defined');
   }
+
   var formatConstructors = this.formatConstructors_;
   var features = [];
   var i, ii;
   for (i = 0, ii = formatConstructors.length; i < ii; ++i) {
+    /**
+     * Avoid "cannot instantiate abstract class" error.
+     * @type {Function}
+     */
     var formatConstructor = formatConstructors[i];
+    /**
+     * @type {ol.format.Feature}
+     */
     var format = new formatConstructor();
     features = this.tryReadFeatures_(format, result, {
       featureProjection: projection
@@ -116,9 +128,13 @@ ol.interaction.DragAndDrop.prototype.handleResult_ = function(file, event) {
       break;
     }
   }
+  if (this.source_) {
+    this.source_.clear();
+    this.source_.addFeatures(features);
+  }
   this.dispatchEvent(
       new ol.interaction.DragAndDrop.Event(
-          ol.interaction.DragAndDrop.EventType.ADD_FEATURES, file,
+          ol.interaction.DragAndDrop.EventType_.ADD_FEATURES, file,
           features, projection));
 };
 
@@ -135,14 +151,10 @@ ol.interaction.DragAndDrop.handleEvent = ol.functions.TRUE;
 
 
 /**
- * @inheritDoc
+ * @private
  */
-ol.interaction.DragAndDrop.prototype.setMap = function(map) {
-  if (this.dropListenKeys_) {
-    this.dropListenKeys_.forEach(ol.events.unlistenByKey);
-    this.dropListenKeys_ = null;
-  }
-  ol.interaction.Interaction.prototype.setMap.call(this, map);
+ol.interaction.DragAndDrop.prototype.registerListeners_ = function() {
+  var map = this.getMap();
   if (map) {
     var dropArea = this.target ? this.target : map.getViewport();
     this.dropListenKeys_ = [
@@ -155,6 +167,31 @@ ol.interaction.DragAndDrop.prototype.setMap = function(map) {
       ol.events.listen(dropArea, ol.events.EventType.DROP,
           ol.interaction.DragAndDrop.handleStop_, this)
     ];
+  }
+};
+
+
+/**
+ * @inheritDoc
+ */
+ol.interaction.DragAndDrop.prototype.setActive = function(active) {
+  ol.interaction.Interaction.prototype.setActive.call(this, active);
+  if (active) {
+    this.registerListeners_();
+  } else {
+    this.unregisterListeners_();
+  }
+};
+
+
+/**
+ * @inheritDoc
+ */
+ol.interaction.DragAndDrop.prototype.setMap = function(map) {
+  this.unregisterListeners_();
+  ol.interaction.Interaction.prototype.setMap.call(this, map);
+  if (this.getActive()) {
+    this.registerListeners_();
   }
 };
 
@@ -176,13 +213,25 @@ ol.interaction.DragAndDrop.prototype.tryReadFeatures_ = function(format, text, o
 
 
 /**
- * @enum {string}
+ * @private
  */
-ol.interaction.DragAndDrop.EventType = {
+ol.interaction.DragAndDrop.prototype.unregisterListeners_ = function() {
+  if (this.dropListenKeys_) {
+    this.dropListenKeys_.forEach(ol.events.unlistenByKey);
+    this.dropListenKeys_ = null;
+  }
+};
+
+
+/**
+ * @enum {string}
+ * @private
+ */
+ol.interaction.DragAndDrop.EventType_ = {
   /**
    * Triggered when features are added
    * @event ol.interaction.DragAndDrop.Event#addfeatures
-   * @api stable
+   * @api
    */
   ADD_FEATURES: 'addfeatures'
 };
@@ -196,7 +245,7 @@ ol.interaction.DragAndDrop.EventType = {
  * @constructor
  * @extends {ol.events.Event}
  * @implements {oli.interaction.DragAndDropEvent}
- * @param {ol.interaction.DragAndDrop.EventType} type Type.
+ * @param {ol.interaction.DragAndDrop.EventType_} type Type.
  * @param {File} file File.
  * @param {Array.<ol.Feature>=} opt_features Features.
  * @param {ol.proj.Projection=} opt_projection Projection.
@@ -208,14 +257,14 @@ ol.interaction.DragAndDrop.Event = function(type, file, opt_features, opt_projec
   /**
    * The features parsed from dropped data.
    * @type {Array.<ol.Feature>|undefined}
-   * @api stable
+   * @api
    */
   this.features = opt_features;
 
   /**
    * The dropped file.
    * @type {File}
-   * @api stable
+   * @api
    */
   this.file = file;
 

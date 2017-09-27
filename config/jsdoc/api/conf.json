@@ -16,7 +16,7 @@
         ]
     },
     "plugins": [
-        "node_modules/jsdoc/plugins/markdown",
+        "plugins/markdown",
         "config/jsdoc/api/plugins/inheritdoc",
         "config/jsdoc/api/plugins/typedefs",
         "config/jsdoc/api/plugins/events",
@@ -26,16 +26,13 @@
     "markdown": {
         "parser": "gfm"
     },
-    "stability": {
-      "levels": ["deprecated","experimental","unstable","stable","frozen","locked"]
-    },
     "templates": {
         "cleverLinks": true,
         "monospaceLinks": true,
         "default": {
             "outputSourceFiles": false
         },
-        "applicationName": "OpenLayers 3"
+        "applicationName": "OpenLayers"
     },
     "jsVersion": 180
 }

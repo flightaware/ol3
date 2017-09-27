@@ -4,7 +4,7 @@ goog.require('ol');
 goog.require('ol.webgl');
 
 var ua = typeof navigator !== 'undefined' ?
-    navigator.userAgent.toLowerCase() : '';
+  navigator.userAgent.toLowerCase() : '';
 
 /**
  * User agent string says we are dealing with Firefox as browser.
@@ -36,7 +36,7 @@ ol.has.MAC = ua.indexOf('macintosh') !== -1;
  * (dips) on the device (`window.devicePixelRatio`).
  * @const
  * @type {number}
- * @api stable
+ * @api
  */
 ol.has.DEVICE_PIXEL_RATIO = window.devicePixelRatio || 1;
 
@@ -53,37 +53,37 @@ ol.has.CANVAS_LINE_DASH = false;
  * if `ol.ENABLE_CANVAS` is set to `false` at compile time.
  * @const
  * @type {boolean}
- * @api stable
+ * @api
  */
 ol.has.CANVAS = ol.ENABLE_CANVAS && (
-    /**
-     * @return {boolean} Canvas supported.
-     */
-    function() {
-      if (!('HTMLCanvasElement' in window)) {
+  /**
+   * @return {boolean} Canvas supported.
+   */
+  function() {
+    if (!('HTMLCanvasElement' in window)) {
+      return false;
+    }
+    try {
+      var context = document.createElement('CANVAS').getContext('2d');
+      if (!context) {
         return false;
-      }
-      try {
-        var context = document.createElement('CANVAS').getContext('2d');
-        if (!context) {
-          return false;
-        } else {
-          if (context.setLineDash !== undefined) {
-            ol.has.CANVAS_LINE_DASH = true;
-          }
-          return true;
+      } else {
+        if (context.setLineDash !== undefined) {
+          ol.has.CANVAS_LINE_DASH = true;
         }
-      } catch (e) {
-        return false;
+        return true;
       }
-    })();
+    } catch (e) {
+      return false;
+    }
+  })();
 
 
 /**
  * Indicates if DeviceOrientation is supported in the user's browser.
  * @const
  * @type {boolean}
- * @api stable
+ * @api
  */
 ol.has.DEVICE_ORIENTATION = 'DeviceOrientationEvent' in window;
 
@@ -92,7 +92,7 @@ ol.has.DEVICE_ORIENTATION = 'DeviceOrientationEvent' in window;
  * Is HTML5 geolocation supported in the current browser?
  * @const
  * @type {boolean}
- * @api stable
+ * @api
  */
 ol.has.GEOLOCATION = 'geolocation' in navigator;
 
@@ -101,7 +101,7 @@ ol.has.GEOLOCATION = 'geolocation' in navigator;
  * True if browser supports touch events.
  * @const
  * @type {boolean}
- * @api stable
+ * @api
  */
 ol.has.TOUCH = ol.ASSUME_TOUCH || 'ontouchstart' in window;
 
@@ -127,7 +127,7 @@ ol.has.MSPOINTER = !!(navigator.msPointerEnabled);
  * if `ol.ENABLE_WEBGL` is set to `false` at compile time.
  * @const
  * @type {boolean}
- * @api stable
+ * @api
  */
 ol.has.WEBGL;
 
@@ -148,7 +148,7 @@ ol.has.WEBGL;
         if (gl) {
           hasWebGL = true;
           textureSize = /** @type {number} */
-              (gl.getParameter(gl.MAX_TEXTURE_SIZE));
+            (gl.getParameter(gl.MAX_TEXTURE_SIZE));
           extensions = gl.getSupportedExtensions();
         }
       } catch (e) {

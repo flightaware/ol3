@@ -7,17 +7,13 @@ goog.require('ol.array');
 goog.require('ol.css');
 goog.require('ol.dom');
 goog.require('ol.events');
-goog.require('ol.layer.Image');
+goog.require('ol.has');
 goog.require('ol.layer.Layer');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
 goog.require('ol.render.Event');
+goog.require('ol.render.EventType');
 goog.require('ol.render.webgl.Immediate');
 goog.require('ol.renderer.Map');
 goog.require('ol.renderer.Type');
-goog.require('ol.renderer.webgl.ImageLayer');
-goog.require('ol.renderer.webgl.TileLayer');
-goog.require('ol.renderer.webgl.VectorLayer');
 goog.require('ol.source.State');
 goog.require('ol.structs.LRUCache');
 goog.require('ol.structs.PriorityQueue');
@@ -30,10 +26,10 @@ goog.require('ol.webgl.ContextEventType');
  * @constructor
  * @extends {ol.renderer.Map}
  * @param {Element} container Container.
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
+ * @api
  */
 ol.renderer.webgl.Map = function(container, map) {
-
   ol.renderer.Map.call(this, container, map);
 
   /**
@@ -41,9 +37,10 @@ ol.renderer.webgl.Map = function(container, map) {
    * @type {HTMLCanvasElement}
    */
   this.canvas_ = /** @type {HTMLCanvasElement} */
-      (document.createElement('CANVAS'));
+    (document.createElement('CANVAS'));
   this.canvas_.style.width = '100%';
   this.canvas_.style.height = '100%';
+  this.canvas_.style.display = 'block';
   this.canvas_.className = ol.css.CLASS_UNSELECTABLE;
   container.insertBefore(this.canvas_, container.childNodes[0] || null);
 
@@ -77,12 +74,11 @@ ol.renderer.webgl.Map = function(container, map) {
    */
   this.gl_ = ol.webgl.getContext(this.canvas_, {
     antialias: true,
-    depth: false,
+    depth: true,
     failIfMajorPerformanceCaveat: true,
     preserveDrawingBuffer: false,
     stencil: true
   });
-  ol.DEBUG && console.assert(this.gl_, 'got a WebGLRenderingContext');
 
   /**
    * @private
@@ -134,12 +130,12 @@ ol.renderer.webgl.Map = function(container, map) {
       });
 
 
- /**
-  * @param {ol.Map} map Map.
-  * @param {?olx.FrameState} frameState Frame state.
-  * @return {boolean} false.
-  * @this {ol.renderer.webgl.Map}
-  */
+  /**
+   * @param {ol.PluggableMap} map Map.
+   * @param {?olx.FrameState} frameState Frame state.
+   * @return {boolean} false.
+   * @this {ol.renderer.webgl.Map}
+   */
   this.loadNextTileTexture_ =
       function(map, frameState) {
         if (!this.tileTextureQueue_.isEmpty()) {
@@ -162,9 +158,29 @@ ol.renderer.webgl.Map = function(container, map) {
   this.textureCacheFrameMarkerCount_ = 0;
 
   this.initializeGL_();
-
 };
 ol.inherits(ol.renderer.webgl.Map, ol.renderer.Map);
+
+
+/**
+ * Determine if this renderer handles the provided layer.
+ * @param {ol.renderer.Type} type The renderer type.
+ * @return {boolean} The renderer can render the layer.
+ */
+ol.renderer.webgl.Map['handles'] = function(type) {
+  return ol.has.WEBGL && type === ol.renderer.Type.WEBGL;
+};
+
+
+/**
+ * Create the map renderer.
+ * @param {Element} container Container.
+ * @param {ol.PluggableMap} map Map.
+ * @return {ol.renderer.webgl.Map} The map renderer.
+ */
+ol.renderer.webgl.Map['create'] = function(container, map) {
+  return new ol.renderer.webgl.Map(container, map);
+};
 
 
 /**
@@ -233,24 +249,7 @@ ol.renderer.webgl.Map.prototype.bindTileTexture = function(tile, tileSize, tileG
 
 
 /**
- * @inheritDoc
- */
-ol.renderer.webgl.Map.prototype.createLayerRenderer = function(layer) {
-  if (ol.ENABLE_IMAGE && layer instanceof ol.layer.Image) {
-    return new ol.renderer.webgl.ImageLayer(this, layer);
-  } else if (ol.ENABLE_TILE && layer instanceof ol.layer.Tile) {
-    return new ol.renderer.webgl.TileLayer(this, layer);
-  } else if (ol.ENABLE_VECTOR && layer instanceof ol.layer.Vector) {
-    return new ol.renderer.webgl.VectorLayer(this, layer);
-  } else {
-    ol.DEBUG && console.assert(false, 'unexpected layer configuration');
-    return null;
-  }
-};
-
-
-/**
- * @param {ol.render.Event.Type} type Event type.
+ * @param {ol.render.EventType} type Event type.
  * @param {olx.FrameState} frameState Frame state.
  * @private
  */
@@ -300,7 +299,7 @@ ol.renderer.webgl.Map.prototype.disposeInternal = function() {
 
 
 /**
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
  * @param {olx.FrameState} frameState Frame state.
  * @private
  */
@@ -432,7 +431,7 @@ ol.renderer.webgl.Map.prototype.renderFrame = function(frameState) {
   this.textureCache_.set((-frameState.index).toString(), null);
   ++this.textureCacheFrameMarkerCount_;
 
-  this.dispatchComposeEvent_(ol.render.Event.Type.PRECOMPOSE, frameState);
+  this.dispatchComposeEvent_(ol.render.EventType.PRECOMPOSE, frameState);
 
   /** @type {Array.<ol.LayerState>} */
   var layerStatesToDraw = [];
@@ -482,7 +481,7 @@ ol.renderer.webgl.Map.prototype.renderFrame = function(frameState) {
   if (this.textureCache_.getCount() - this.textureCacheFrameMarkerCount_ >
       ol.WEBGL_TEXTURE_CACHE_HIGH_WATER_MARK) {
     frameState.postRenderFunctions.push(
-      /** @type {ol.PostRenderFunction} */ (this.expireCache_.bind(this))
+        /** @type {ol.PostRenderFunction} */ (this.expireCache_.bind(this))
     );
   }
 
@@ -491,7 +490,7 @@ ol.renderer.webgl.Map.prototype.renderFrame = function(frameState) {
     frameState.animate = true;
   }
 
-  this.dispatchComposeEvent_(ol.render.Event.Type.POSTCOMPOSE, frameState);
+  this.dispatchComposeEvent_(ol.render.EventType.POSTCOMPOSE, frameState);
 
   this.scheduleRemoveUnusedLayerRenderers(frameState);
   this.scheduleExpireIconCache(frameState);
@@ -502,8 +501,8 @@ ol.renderer.webgl.Map.prototype.renderFrame = function(frameState) {
 /**
  * @inheritDoc
  */
-ol.renderer.webgl.Map.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, callback, thisArg,
-        layerFilter, thisArg2) {
+ol.renderer.webgl.Map.prototype.forEachFeatureAtCoordinate = function(coordinate, frameState, hitTolerance, callback, thisArg,
+    layerFilter, thisArg2) {
   var result;
 
   if (this.getGL().isContextLost()) {
@@ -522,7 +521,7 @@ ol.renderer.webgl.Map.prototype.forEachFeatureAtCoordinate = function(coordinate
         layerFilter.call(thisArg2, layer)) {
       var layerRenderer = this.getLayerRenderer(layer);
       result = layerRenderer.forEachFeatureAtCoordinate(
-          coordinate, frameState, callback, thisArg);
+          coordinate, frameState, hitTolerance, callback, thisArg);
       if (result) {
         return result;
       }
@@ -535,7 +534,7 @@ ol.renderer.webgl.Map.prototype.forEachFeatureAtCoordinate = function(coordinate
 /**
  * @inheritDoc
  */
-ol.renderer.webgl.Map.prototype.hasFeatureAtCoordinate = function(coordinate, frameState, layerFilter, thisArg) {
+ol.renderer.webgl.Map.prototype.hasFeatureAtCoordinate = function(coordinate, frameState, hitTolerance, layerFilter, thisArg) {
   var hasFeature = false;
 
   if (this.getGL().isContextLost()) {
@@ -568,7 +567,7 @@ ol.renderer.webgl.Map.prototype.hasFeatureAtCoordinate = function(coordinate, fr
  * @inheritDoc
  */
 ol.renderer.webgl.Map.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg,
-        layerFilter, thisArg2) {
+    layerFilter, thisArg2) {
   if (this.getGL().isContextLost()) {
     return false;
   }
@@ -584,7 +583,7 @@ ol.renderer.webgl.Map.prototype.forEachLayerAtPixel = function(pixel, frameState
     var layer = layerState.layer;
     if (ol.layer.Layer.visibleAtResolution(layerState, viewState.resolution) &&
         layerFilter.call(thisArg, layer)) {
-      var layerRenderer = this.getLayerRenderer(layer);
+      var layerRenderer = /** @type {ol.renderer.webgl.Layer} */ (this.getLayerRenderer(layer));
       result = layerRenderer.forEachLayerAtPixel(
           pixel, frameState, callback, thisArg);
       if (result) {

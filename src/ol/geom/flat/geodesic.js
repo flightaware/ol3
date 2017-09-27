@@ -1,6 +1,5 @@
 goog.provide('ol.geom.flat.geodesic');
 
-goog.require('ol');
 goog.require('ol.math');
 goog.require('ol.proj');
 
@@ -65,8 +64,6 @@ ol.geom.flat.geodesic.line_ = function(interpolate, transform, squaredTolerance)
       // segment.
       flatCoordinates.push(b[0], b[1]);
       key = fracB.toString();
-      ol.DEBUG && console.assert(!(key in fractions),
-          'fractions object should contain key : ' + key);
       fractions[key] = true;
     } else {
       // Otherwise, we need to subdivide the current line segment.  Split it
@@ -76,8 +73,6 @@ ol.geom.flat.geodesic.line_ = function(interpolate, transform, squaredTolerance)
       geoStack.push(geoB, geoM, geoM, geoA);
     }
   }
-  ol.DEBUG && console.assert(maxIterations > 0,
-      'maxIterations should be more than 0');
 
   return flatCoordinates;
 };
@@ -124,7 +119,7 @@ ol.geom.flat.geodesic.greatCircleArc = function(
         var lat = Math.asin(sinLat1 * cosD + cosLat1 * sinD * Math.cos(theta));
         var lon = ol.math.toRadians(lon1) +
             Math.atan2(Math.sin(theta) * sinD * cosLat1,
-                       cosD - sinLat1 * Math.sin(lat));
+                cosD - sinLat1 * Math.sin(lat));
         return [ol.math.toDegrees(lon), ol.math.toDegrees(lat)];
       }, ol.proj.getTransform(geoProjection, projection), squaredTolerance);
 };

@@ -1,11 +1,11 @@
 goog.provide('ol.webgl.Shader');
 
 goog.require('ol.functions');
-goog.require('ol.webgl');
 
 
 /**
  * @constructor
+ * @abstract
  * @param {string} source Source.
  * @struct
  */

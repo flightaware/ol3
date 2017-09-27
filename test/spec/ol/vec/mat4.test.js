@@ -1,4 +1,4 @@
-goog.provide('ol.test.vec.Mat4');
+
 
 goog.require('ol.vec.Mat4');
 
@@ -8,7 +8,7 @@ describe('ol.vec.Mat4', function() {
   describe('ol.vec.Mat4.create()', function() {
     it('returns the expected matrix', function() {
       expect(ol.vec.Mat4.create()).to.eql(
-            [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+          [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     });
   });
 

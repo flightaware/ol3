@@ -1,7 +1,5 @@
 goog.provide('ol.array');
 
-goog.require('ol');
-
 
 /**
  * Performs a binary search on the provided sorted list and returns the index of the item if found. If it can't be found it'll return -1.
@@ -114,10 +112,6 @@ ol.array.linearFindNearest = function(arr, target, direction) {
  * @param {number} end End index.
  */
 ol.array.reverseSubArray = function(arr, begin, end) {
-  ol.DEBUG && console.assert(begin >= 0,
-      'Array begin index should be equal to or greater than 0');
-  ol.DEBUG && console.assert(end < arr.length,
-      'Array end index should be less than the array length');
   while (begin < end) {
     var tmp = arr[begin];
     arr[begin] = arr[end];
@@ -125,22 +119,6 @@ ol.array.reverseSubArray = function(arr, begin, end) {
     ++begin;
     --end;
   }
-};
-
-
-/**
- * @param {Array.<*>} arr Array.
- * @return {!Array.<?>} Flattened Array.
- */
-ol.array.flatten = function(arr) {
-  var data = arr.reduce(function(flattened, value) {
-    if (Array.isArray(value)) {
-      return flattened.concat(ol.array.flatten(value));
-    } else {
-      return flattened.concat(value);
-    }
-  }, []);
-  return data;
 };
 
 

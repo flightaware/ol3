@@ -4,13 +4,16 @@
 goog.provide('ol.renderer.webgl.TileLayer');
 
 goog.require('ol');
-goog.require('ol.Tile');
+goog.require('ol.LayerType');
 goog.require('ol.TileRange');
+goog.require('ol.TileState');
 goog.require('ol.array');
 goog.require('ol.extent');
 goog.require('ol.math');
+goog.require('ol.renderer.Type');
 goog.require('ol.renderer.webgl.Layer');
 goog.require('ol.renderer.webgl.tilelayershader');
+goog.require('ol.renderer.webgl.tilelayershader.Locations');
 goog.require('ol.size');
 goog.require('ol.transform');
 goog.require('ol.webgl');
@@ -22,6 +25,7 @@ goog.require('ol.webgl.Buffer');
  * @extends {ol.renderer.webgl.Layer}
  * @param {ol.renderer.webgl.Map} mapRenderer Map renderer.
  * @param {ol.layer.Tile} tileLayer Tile layer.
+ * @api
  */
 ol.renderer.webgl.TileLayer = function(mapRenderer, tileLayer) {
 
@@ -85,6 +89,31 @@ ol.inherits(ol.renderer.webgl.TileLayer, ol.renderer.webgl.Layer);
 
 
 /**
+ * Determine if this renderer handles the provided layer.
+ * @param {ol.renderer.Type} type The renderer type.
+ * @param {ol.layer.Layer} layer The candidate layer.
+ * @return {boolean} The renderer can render the layer.
+ */
+ol.renderer.webgl.TileLayer['handles'] = function(type, layer) {
+  return type === ol.renderer.Type.WEBGL && layer.getType() === ol.LayerType.TILE;
+};
+
+
+/**
+ * Create a layer renderer.
+ * @param {ol.renderer.Map} mapRenderer The map renderer.
+ * @param {ol.layer.Layer} layer The layer to be rendererd.
+ * @return {ol.renderer.webgl.TileLayer} The layer renderer.
+ */
+ol.renderer.webgl.TileLayer['create'] = function(mapRenderer, layer) {
+  return new ol.renderer.webgl.TileLayer(
+      /** @type {ol.renderer.webgl.Map} */ (mapRenderer),
+      /** @type {ol.layer.Tile} */ (layer)
+  );
+};
+
+
+/**
  * @inheritDoc
  */
 ol.renderer.webgl.TileLayer.prototype.disposeInternal = function() {
@@ -95,38 +124,30 @@ ol.renderer.webgl.TileLayer.prototype.disposeInternal = function() {
 
 
 /**
- * Create a function that adds loaded tiles to the tile lookup.
- * @param {ol.source.Tile} source Tile source.
- * @param {ol.proj.Projection} projection Projection of the tiles.
- * @param {Object.<number, Object.<string, ol.Tile>>} tiles Lookup of loaded
- *     tiles by zoom level.
- * @return {function(number, ol.TileRange):boolean} A function that can be
- *     called with a zoom level and a tile range to add loaded tiles to the
- *     lookup.
- * @protected
+ * @inheritDoc
  */
 ol.renderer.webgl.TileLayer.prototype.createLoadedTileFinder = function(source, projection, tiles) {
   var mapRenderer = this.mapRenderer;
 
   return (
-      /**
-       * @param {number} zoom Zoom level.
-       * @param {ol.TileRange} tileRange Tile range.
-       * @return {boolean} The tile range is fully loaded.
-       */
-      function(zoom, tileRange) {
-        function callback(tile) {
-          var loaded = mapRenderer.isTileTextureLoaded(tile);
-          if (loaded) {
-            if (!tiles[zoom]) {
-              tiles[zoom] = {};
-            }
-            tiles[zoom][tile.tileCoord.toString()] = tile;
+    /**
+     * @param {number} zoom Zoom level.
+     * @param {ol.TileRange} tileRange Tile range.
+     * @return {boolean} The tile range is fully loaded.
+     */
+    function(zoom, tileRange) {
+      function callback(tile) {
+        var loaded = mapRenderer.isTileTextureLoaded(tile);
+        if (loaded) {
+          if (!tiles[zoom]) {
+            tiles[zoom] = {};
           }
-          return loaded;
+          tiles[zoom][tile.tileCoord.toString()] = tile;
         }
-        return source.forEachLoadedTile(projection, zoom, tileRange, callback);
-      });
+        return loaded;
+      }
+      return source.forEachLoadedTile(projection, zoom, tileRange, callback);
+    });
 };
 
 
@@ -161,12 +182,11 @@ ol.renderer.webgl.TileLayer.prototype.prepareFrame = function(frameState, layerS
   var pixelRatio = tilePixelSize[0] /
       ol.size.toSize(tileGrid.getTileSize(z), this.tmpSize_)[0];
   var tilePixelResolution = tileResolution / pixelRatio;
-  var tileGutter = frameState.pixelRatio * tileSource.getGutter(projection);
+  var tileGutter = tileSource.getTilePixelRatio(pixelRatio) * tileSource.getGutter(projection);
 
   var center = viewState.center;
   var extent = frameState.extent;
-  var tileRange = tileGrid.getTileRangeForExtentAndResolution(
-      extent, tileResolution);
+  var tileRange = tileGrid.getTileRangeForExtentAndZ(extent, z);
 
   var framebufferExtent;
   if (this.renderedTileRange_ &&
@@ -202,8 +222,7 @@ ol.renderer.webgl.TileLayer.prototype.prepareFrame = function(frameState, layerS
     var program = context.getProgram(this.fragmentShader_, this.vertexShader_);
     context.useProgram(program);
     if (!this.locations_) {
-      this.locations_ =
-          new ol.renderer.webgl.tilelayershader.Locations(gl, program);
+      this.locations_ = new ol.renderer.webgl.tilelayershader.Locations(gl, program);
     }
 
     context.bindBuffer(ol.webgl.ARRAY_BUFFER, this.renderArrayBuffer_);
@@ -242,20 +261,20 @@ ol.renderer.webgl.TileLayer.prototype.prepareFrame = function(frameState, layerS
           }
         }
         tileState = tile.getState();
-        drawable = tileState == ol.Tile.State.LOADED ||
-            tileState == ol.Tile.State.EMPTY ||
-            tileState == ol.Tile.State.ERROR && !useInterimTilesOnError;
+        drawable = tileState == ol.TileState.LOADED ||
+            tileState == ol.TileState.EMPTY ||
+            tileState == ol.TileState.ERROR && !useInterimTilesOnError;
         if (!drawable) {
           tile = tile.getInterimTile();
         }
         tileState = tile.getState();
-        if (tileState == ol.Tile.State.LOADED) {
+        if (tileState == ol.TileState.LOADED) {
           if (mapRenderer.isTileTextureLoaded(tile)) {
             tilesToDrawByZ[z][tile.tileCoord.toString()] = tile;
             continue;
           }
-        } else if (tileState == ol.Tile.State.EMPTY ||
-                   (tileState == ol.Tile.State.ERROR &&
+        } else if (tileState == ol.TileState.EMPTY ||
+                   (tileState == ol.TileState.ERROR &&
                     !useInterimTilesOnError)) {
           continue;
         }
@@ -322,7 +341,7 @@ ol.renderer.webgl.TileLayer.prototype.prepareFrame = function(frameState, layerS
        * @param {ol.Tile} tile Tile.
        */
       function(tile) {
-        if (tile.getState() == ol.Tile.State.LOADED &&
+        if (tile.getState() == ol.TileState.LOADED &&
             !mapRenderer.isTileTextureLoaded(tile) &&
             !tileTextureQueue.isKeyQueued(tile.getKey())) {
           tileTextureQueue.enqueue([
@@ -358,13 +377,7 @@ ol.renderer.webgl.TileLayer.prototype.prepareFrame = function(frameState, layerS
 
 
 /**
- * @param {ol.Pixel} pixel Pixel.
- * @param {olx.FrameState} frameState FrameState.
- * @param {function(this: S, ol.layer.Layer, (Uint8ClampedArray|Uint8Array)): T} callback Layer
- *     callback.
- * @param {S} thisArg Value to use as `this` when executing `callback`.
- * @return {T|undefined} Callback result.
- * @template S,T,U
+ * @inheritDoc
  */
 ol.renderer.webgl.TileLayer.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg) {
   if (!this.framebuffer) {

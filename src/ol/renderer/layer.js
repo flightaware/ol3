@@ -1,15 +1,14 @@
 goog.provide('ol.renderer.Layer');
 
 goog.require('ol');
-goog.require('ol.Image');
+goog.require('ol.ImageState');
 goog.require('ol.Observable');
-goog.require('ol.Tile');
+goog.require('ol.TileState');
 goog.require('ol.asserts');
 goog.require('ol.events');
 goog.require('ol.events.EventType');
 goog.require('ol.functions');
 goog.require('ol.source.State');
-goog.require('ol.transform');
 
 
 /**
@@ -36,6 +35,7 @@ ol.inherits(ol.renderer.Layer, ol.Observable);
 /**
  * @param {ol.Coordinate} coordinate Coordinate.
  * @param {olx.FrameState} frameState Frame state.
+ * @param {number} hitTolerance Hit tolerance in pixels.
  * @param {function(this: S, (ol.Feature|ol.render.Feature), ol.layer.Layer): T}
  *     callback Feature callback.
  * @param {S} thisArg Value to use as `this` when executing `callback`.
@@ -43,29 +43,6 @@ ol.inherits(ol.renderer.Layer, ol.Observable);
  * @template S,T
  */
 ol.renderer.Layer.prototype.forEachFeatureAtCoordinate = ol.nullFunction;
-
-
-/**
- * @param {ol.Pixel} pixel Pixel.
- * @param {olx.FrameState} frameState Frame state.
- * @param {function(this: S, ol.layer.Layer, (Uint8ClampedArray|Uint8Array)): T} callback Layer callback.
- * @param {S} thisArg Value to use as `this` when executing `callback`.
- * @return {T|undefined} Callback result.
- * @template S,T
- */
-ol.renderer.Layer.prototype.forEachLayerAtPixel = function(pixel, frameState, callback, thisArg) {
-  var coordinate = ol.transform.apply(
-      frameState.pixelToCoordinateTransform, pixel.slice());
-
-  var hasFeature = this.forEachFeatureAtCoordinate(
-      coordinate, frameState, ol.functions.TRUE, this);
-
-  if (hasFeature) {
-    return callback.call(thisArg, this.layer_, null);
-  } else {
-    return undefined;
-  }
-};
 
 
 /**
@@ -89,20 +66,20 @@ ol.renderer.Layer.prototype.hasFeatureAtCoordinate = ol.functions.FALSE;
  */
 ol.renderer.Layer.prototype.createLoadedTileFinder = function(source, projection, tiles) {
   return (
-      /**
-       * @param {number} zoom Zoom level.
-       * @param {ol.TileRange} tileRange Tile range.
-       * @return {boolean} The tile range is fully loaded.
-       */
-      function(zoom, tileRange) {
-        function callback(tile) {
-          if (!tiles[zoom]) {
-            tiles[zoom] = {};
-          }
-          tiles[zoom][tile.tileCoord.toString()] = tile;
+    /**
+     * @param {number} zoom Zoom level.
+     * @param {ol.TileRange} tileRange Tile range.
+     * @return {boolean} The tile range is fully loaded.
+     */
+    function(zoom, tileRange) {
+      function callback(tile) {
+        if (!tiles[zoom]) {
+          tiles[zoom] = {};
         }
-        return source.forEachLoadedTile(projection, zoom, tileRange, callback);
-      });
+        tiles[zoom][tile.tileCoord.toString()] = tile;
+      }
+      return source.forEachLoadedTile(projection, zoom, tileRange, callback);
+    });
 };
 
 
@@ -121,7 +98,7 @@ ol.renderer.Layer.prototype.getLayer = function() {
  */
 ol.renderer.Layer.prototype.handleImageChange_ = function(event) {
   var image = /** @type {ol.Image} */ (event.target);
-  if (image.getState() === ol.Image.State.LOADED) {
+  if (image.getState() === ol.ImageState.LOADED) {
     this.renderIfReadyAndVisible();
   }
 };
@@ -137,24 +114,16 @@ ol.renderer.Layer.prototype.handleImageChange_ = function(event) {
  */
 ol.renderer.Layer.prototype.loadImage = function(image) {
   var imageState = image.getState();
-  if (imageState != ol.Image.State.LOADED &&
-      imageState != ol.Image.State.ERROR) {
-    // the image is either "idle" or "loading", register the change
-    // listener (a noop if the listener was already registered)
-    ol.DEBUG && console.assert(imageState == ol.Image.State.IDLE ||
-        imageState == ol.Image.State.LOADING,
-        'imageState is "idle" or "loading"');
+  if (imageState != ol.ImageState.LOADED &&
+      imageState != ol.ImageState.ERROR) {
     ol.events.listen(image, ol.events.EventType.CHANGE,
         this.handleImageChange_, this);
   }
-  if (imageState == ol.Image.State.IDLE) {
+  if (imageState == ol.ImageState.IDLE) {
     image.load();
     imageState = image.getState();
-    ol.DEBUG && console.assert(imageState == ol.Image.State.LOADING ||
-        imageState == ol.Image.State.LOADED,
-        'imageState is "loading" or "loaded"');
   }
-  return imageState == ol.Image.State.LOADED;
+  return imageState == ol.ImageState.LOADED;
 };
 
 
@@ -178,17 +147,19 @@ ol.renderer.Layer.prototype.scheduleExpireCache = function(frameState, tileSourc
   if (tileSource.canExpireCache()) {
     /**
      * @param {ol.source.Tile} tileSource Tile source.
-     * @param {ol.Map} map Map.
+     * @param {ol.PluggableMap} map Map.
      * @param {olx.FrameState} frameState Frame state.
      */
     var postRenderFunction = function(tileSource, map, frameState) {
       var tileSourceKey = ol.getUid(tileSource).toString();
-      tileSource.expireCache(frameState.viewState.projection,
-                             frameState.usedTiles[tileSourceKey]);
+      if (tileSourceKey in frameState.usedTiles) {
+        tileSource.expireCache(frameState.viewState.projection,
+            frameState.usedTiles[tileSourceKey]);
+      }
     }.bind(null, tileSource);
 
     frameState.postRenderFunctions.push(
-      /** @type {ol.PostRenderFunction} */ (postRenderFunction)
+        /** @type {ol.PostRenderFunction} */ (postRenderFunction)
     );
   }
 };
@@ -292,7 +263,7 @@ ol.renderer.Layer.prototype.manageTilePyramid = function(
       for (y = tileRange.minY; y <= tileRange.maxY; ++y) {
         if (currentZ - z <= preload) {
           tile = tileSource.getTile(z, x, y, pixelRatio, projection);
-          if (tile.getState() == ol.Tile.State.IDLE) {
+          if (tile.getState() == ol.TileState.IDLE) {
             wantedTiles[tile.getKey()] = true;
             if (!tileQueue.isKeyQueued(tile.getKey())) {
               tileQueue.enqueue([tile, tileSourceKey,

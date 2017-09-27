@@ -22,7 +22,7 @@ goog.require('ol.xml');
  *
  * @constructor
  * @extends {ol.format.XMLFeature}
- * @api stable
+ * @api
  */
 ol.format.OSMXML = function() {
   ol.format.XMLFeature.call(this);
@@ -36,30 +36,11 @@ ol.inherits(ol.format.OSMXML, ol.format.XMLFeature);
 
 
 /**
- * @const
- * @type {Array.<string>}
- * @private
- */
-ol.format.OSMXML.EXTENSIONS_ = ['.osm'];
-
-
-/**
- * @inheritDoc
- */
-ol.format.OSMXML.prototype.getExtensions = function() {
-  return ol.format.OSMXML.EXTENSIONS_;
-};
-
-
-/**
  * @param {Node} node Node.
  * @param {Array.<*>} objectStack Object stack.
  * @private
  */
 ol.format.OSMXML.readNode_ = function(node, objectStack) {
-  ol.DEBUG && console.assert(node.nodeType == Node.ELEMENT_NODE,
-      'node.nodeType should be ELEMENT');
-  ol.DEBUG && console.assert(node.localName == 'node', 'localName should be node');
   var options = /** @type {olx.format.ReadOptions} */ (objectStack[0]);
   var state = /** @type {Object} */ (objectStack[objectStack.length - 1]);
   var id = node.getAttribute('id');
@@ -90,37 +71,14 @@ ol.format.OSMXML.readNode_ = function(node, objectStack) {
  * @private
  */
 ol.format.OSMXML.readWay_ = function(node, objectStack) {
-  ol.DEBUG && console.assert(node.nodeType == Node.ELEMENT_NODE,
-      'node.nodeType should be ELEMENT');
-  ol.DEBUG && console.assert(node.localName == 'way', 'localName should be way');
-  var options = /** @type {olx.format.ReadOptions} */ (objectStack[0]);
   var id = node.getAttribute('id');
   var values = ol.xml.pushParseAndPop({
+    id: id,
     ndrefs: [],
     tags: {}
   }, ol.format.OSMXML.WAY_PARSERS_, node, objectStack);
   var state = /** @type {Object} */ (objectStack[objectStack.length - 1]);
-  /** @type {Array.<number>} */
-  var flatCoordinates = [];
-  for (var i = 0, ii = values.ndrefs.length; i < ii; i++) {
-    var point = state.nodes[values.ndrefs[i]];
-    ol.array.extend(flatCoordinates, point);
-  }
-  var geometry;
-  if (values.ndrefs[0] == values.ndrefs[values.ndrefs.length - 1]) {
-    // closed way
-    geometry = new ol.geom.Polygon(null);
-    geometry.setFlatCoordinates(ol.geom.GeometryLayout.XY, flatCoordinates,
-        [flatCoordinates.length]);
-  } else {
-    geometry = new ol.geom.LineString(null);
-    geometry.setFlatCoordinates(ol.geom.GeometryLayout.XY, flatCoordinates);
-  }
-  ol.format.Feature.transformWithOptions(geometry, false, options);
-  var feature = new ol.Feature(geometry);
-  feature.setId(id);
-  feature.setProperties(values.tags);
-  state.features.push(feature);
+  state.ways.push(values);
 };
 
 
@@ -130,9 +88,6 @@ ol.format.OSMXML.readWay_ = function(node, objectStack) {
  * @private
  */
 ol.format.OSMXML.readNd_ = function(node, objectStack) {
-  ol.DEBUG && console.assert(node.nodeType == Node.ELEMENT_NODE,
-      'node.nodeType should be ELEMENT');
-  ol.DEBUG && console.assert(node.localName == 'nd', 'localName should be nd');
   var values = /** @type {Object} */ (objectStack[objectStack.length - 1]);
   values.ndrefs.push(node.getAttribute('ref'));
 };
@@ -144,9 +99,6 @@ ol.format.OSMXML.readNd_ = function(node, objectStack) {
  * @private
  */
 ol.format.OSMXML.readTag_ = function(node, objectStack) {
-  ol.DEBUG && console.assert(node.nodeType == Node.ELEMENT_NODE,
-      'node.nodeType should be ELEMENT');
-  ol.DEBUG && console.assert(node.localName == 'tag', 'localName should be tag');
   var values = /** @type {Object} */ (objectStack[objectStack.length - 1]);
   values.tags[node.getAttribute('k')] = node.getAttribute('v');
 };
@@ -204,7 +156,7 @@ ol.format.OSMXML.NODE_PARSERS_ = ol.xml.makeStructureNS(
  * @param {Document|Node|Object|string} source Source.
  * @param {olx.format.ReadOptions=} opt_options Read options.
  * @return {Array.<ol.Feature>} Features.
- * @api stable
+ * @api
  */
 ol.format.OSMXML.prototype.readFeatures;
 
@@ -213,14 +165,38 @@ ol.format.OSMXML.prototype.readFeatures;
  * @inheritDoc
  */
 ol.format.OSMXML.prototype.readFeaturesFromNode = function(node, opt_options) {
-  ol.DEBUG && console.assert(node.nodeType == Node.ELEMENT_NODE,
-      'node.nodeType should be ELEMENT');
   var options = this.getReadOptions(node, opt_options);
   if (node.localName == 'osm') {
     var state = ol.xml.pushParseAndPop({
       nodes: {},
+      ways: [],
       features: []
     }, ol.format.OSMXML.PARSERS_, node, [options]);
+    // parse nodes in ways
+    for (var j = 0; j < state.ways.length; j++) {
+      var values = /** @type {Object} */ (state.ways[j]);
+      /** @type {Array.<number>} */
+      var flatCoordinates = [];
+      for (var i = 0, ii = values.ndrefs.length; i < ii; i++) {
+        var point = state.nodes[values.ndrefs[i]];
+        ol.array.extend(flatCoordinates, point);
+      }
+      var geometry;
+      if (values.ndrefs[0] == values.ndrefs[values.ndrefs.length - 1]) {
+        // closed way
+        geometry = new ol.geom.Polygon(null);
+        geometry.setFlatCoordinates(ol.geom.GeometryLayout.XY, flatCoordinates,
+            [flatCoordinates.length]);
+      } else {
+        geometry = new ol.geom.LineString(null);
+        geometry.setFlatCoordinates(ol.geom.GeometryLayout.XY, flatCoordinates);
+      }
+      ol.format.Feature.transformWithOptions(geometry, false, options);
+      var feature = new ol.Feature(geometry);
+      feature.setId(values.id);
+      feature.setProperties(values.tags);
+      state.features.push(feature);
+    }
     if (state.features) {
       return state.features;
     }
@@ -235,6 +211,27 @@ ol.format.OSMXML.prototype.readFeaturesFromNode = function(node, opt_options) {
  * @function
  * @param {Document|Node|Object|string} source Source.
  * @return {ol.proj.Projection} Projection.
- * @api stable
+ * @api
  */
 ol.format.OSMXML.prototype.readProjection;
+
+
+/**
+ * Not implemented.
+ * @inheritDoc
+ */
+ol.format.OSMXML.prototype.writeFeatureNode = function(feature, opt_options) {};
+
+
+/**
+ * Not implemented.
+ * @inheritDoc
+ */
+ol.format.OSMXML.prototype.writeFeaturesNode = function(features, opt_options) {};
+
+
+/**
+ * Not implemented.
+ * @inheritDoc
+ */
+ol.format.OSMXML.prototype.writeGeometryNode = function(geometry, opt_options) {};

@@ -51,6 +51,7 @@ for (i = 0; i < iconCount; ++i) {
     rotation: info.rotation,
     scale: info.scale,
     size: info.size,
+    crossOrigin: 'anonymous',
     src: 'data/Butterfly.png'
   });
 }
@@ -79,7 +80,7 @@ var vector = new ol.layer.Vector({
 });
 
 var map = new ol.Map({
-  renderer: /** @type {ol.renderer.Type} */ ('webgl'),
+  renderer: /** @type {Array<ol.renderer.Type>} */ (['webgl', 'canvas']),
   layers: [vector],
   target: document.getElementById('map'),
   view: new ol.View({

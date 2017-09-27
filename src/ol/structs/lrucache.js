@@ -1,8 +1,6 @@
 goog.provide('ol.structs.LRUCache');
 
-goog.require('ol');
 goog.require('ol.asserts');
-goog.require('ol.obj');
 
 
 /**
@@ -12,8 +10,14 @@ goog.require('ol.obj');
  * @constructor
  * @struct
  * @template T
+ * @param {number=} opt_highWaterMark High water mark.
  */
-ol.structs.LRUCache = function() {
+ol.structs.LRUCache = function(opt_highWaterMark) {
+
+  /**
+   * @type {number}
+   */
+  this.highWaterMark = opt_highWaterMark !== undefined ? opt_highWaterMark : 2048;
 
   /**
    * @private
@@ -42,51 +46,12 @@ ol.structs.LRUCache = function() {
 };
 
 
-if (ol.DEBUG) {
-  /**
-   * FIXME empty description for jsdoc
-   */
-  ol.structs.LRUCache.prototype.assertValid = function() {
-    if (this.count_ === 0) {
-      console.assert(ol.obj.isEmpty(this.entries_),
-          'entries must be an empty object (count = 0)');
-      console.assert(!this.oldest_,
-          'oldest must be null (count = 0)');
-      console.assert(!this.newest_,
-          'newest must be null (count = 0)');
-    } else {
-      console.assert(Object.keys(this.entries_).length == this.count_,
-          'number of entries matches count');
-      console.assert(this.oldest_,
-          'we have an oldest entry');
-      console.assert(!this.oldest_.older,
-          'no entry is older than oldest');
-      console.assert(this.newest_,
-          'we have a newest entry');
-      console.assert(!this.newest_.newer,
-          'no entry is newer than newest');
-      var i, entry;
-      var older = null;
-      i = 0;
-      for (entry = this.oldest_; entry; entry = entry.newer) {
-        console.assert(entry.older === older,
-            'entry.older links to correct older');
-        older = entry;
-        ++i;
-      }
-      console.assert(i == this.count_, 'iterated correct amount of times');
-      var newer = null;
-      i = 0;
-      for (entry = this.newest_; entry; entry = entry.older) {
-        console.assert(entry.newer === newer,
-            'entry.newer links to correct newer');
-        newer = entry;
-        ++i;
-      }
-      console.assert(i == this.count_, 'iterated correct amount of times');
-    }
-  };
-}
+/**
+ * @return {boolean} Can expire cache.
+ */
+ol.structs.LRUCache.prototype.canExpireCache = function() {
+  return this.getCount() > this.highWaterMark;
+};
 
 
 /**
@@ -169,7 +134,6 @@ ol.structs.LRUCache.prototype.getKeys = function() {
   for (entry = this.newest_; entry; entry = entry.older) {
     keys[i++] = entry.key_;
   }
-  ol.DEBUG && console.assert(i == this.count_, 'iterated correct number of times');
   return keys;
 };
 
@@ -184,7 +148,6 @@ ol.structs.LRUCache.prototype.getValues = function() {
   for (entry = this.newest_; entry; entry = entry.older) {
     values[i++] = entry.value_;
   }
-  ol.DEBUG && console.assert(i == this.count_, 'iterated correct number of times');
   return values;
 };
 
@@ -193,7 +156,6 @@ ol.structs.LRUCache.prototype.getValues = function() {
  * @return {T} Last value.
  */
 ol.structs.LRUCache.prototype.peekLast = function() {
-  ol.DEBUG && console.assert(this.oldest_, 'oldest must not be null');
   return this.oldest_.value_;
 };
 
@@ -202,7 +164,6 @@ ol.structs.LRUCache.prototype.peekLast = function() {
  * @return {string} Last key.
  */
 ol.structs.LRUCache.prototype.peekLastKey = function() {
-  ol.DEBUG && console.assert(this.oldest_, 'oldest must not be null');
   return this.oldest_.key_;
 };
 
@@ -211,11 +172,7 @@ ol.structs.LRUCache.prototype.peekLastKey = function() {
  * @return {T} value Value.
  */
 ol.structs.LRUCache.prototype.pop = function() {
-  ol.DEBUG && console.assert(this.oldest_, 'oldest must not be null');
-  ol.DEBUG && console.assert(this.newest_, 'newest must not be null');
   var entry = this.oldest_;
-  ol.DEBUG && console.assert(entry.key_ in this.entries_,
-      'oldest is indexed in entries');
   delete this.entries_[entry.key_];
   if (entry.newer) {
     entry.newer.older = null;
@@ -244,8 +201,6 @@ ol.structs.LRUCache.prototype.replace = function(key, value) {
  * @param {T} value Value.
  */
 ol.structs.LRUCache.prototype.set = function(key, value) {
-  ol.DEBUG && console.assert(!(key in {}),
-      'key is not a standard property of objects (e.g. "__proto__")');
   ol.asserts.assert(!(key in this.entries_),
       16); // Tried to set a value for a key that is used already
   var entry = /** @type {ol.LRUCacheEntry} */ ({

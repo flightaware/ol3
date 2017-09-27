@@ -2,7 +2,7 @@ goog.provide('ol.interaction.Pointer');
 
 goog.require('ol');
 goog.require('ol.functions');
-goog.require('ol.MapBrowserEvent.EventType');
+goog.require('ol.MapBrowserEventType');
 goog.require('ol.MapBrowserPointerEvent');
 goog.require('ol.interaction.Interaction');
 goog.require('ol.obj');
@@ -28,7 +28,7 @@ ol.interaction.Pointer = function(opt_options) {
   var options = opt_options ? opt_options : {};
 
   var handleEvent = options.handleEvent ?
-      options.handleEvent : ol.interaction.Pointer.handleEvent;
+    options.handleEvent : ol.interaction.Pointer.handleEvent;
 
   ol.interaction.Interaction.call(this, {
     handleEvent: handleEvent
@@ -39,28 +39,28 @@ ol.interaction.Pointer = function(opt_options) {
    * @private
    */
   this.handleDownEvent_ = options.handleDownEvent ?
-      options.handleDownEvent : ol.interaction.Pointer.handleDownEvent;
+    options.handleDownEvent : ol.interaction.Pointer.handleDownEvent;
 
   /**
    * @type {function(ol.MapBrowserPointerEvent)}
    * @private
    */
   this.handleDragEvent_ = options.handleDragEvent ?
-      options.handleDragEvent : ol.interaction.Pointer.handleDragEvent;
+    options.handleDragEvent : ol.interaction.Pointer.handleDragEvent;
 
   /**
    * @type {function(ol.MapBrowserPointerEvent)}
    * @private
    */
   this.handleMoveEvent_ = options.handleMoveEvent ?
-      options.handleMoveEvent : ol.interaction.Pointer.handleMoveEvent;
+    options.handleMoveEvent : ol.interaction.Pointer.handleMoveEvent;
 
   /**
    * @type {function(ol.MapBrowserPointerEvent):boolean}
    * @private
    */
   this.handleUpEvent_ = options.handleUpEvent ?
-      options.handleUpEvent : ol.interaction.Pointer.handleUpEvent;
+    options.handleUpEvent : ol.interaction.Pointer.handleUpEvent;
 
   /**
    * @type {boolean}
@@ -69,7 +69,7 @@ ol.interaction.Pointer = function(opt_options) {
   this.handlingDownUpSequence = false;
 
   /**
-   * @type {Object.<number, ol.pointer.PointerEvent>}
+   * @type {Object.<string, ol.pointer.PointerEvent>}
    * @private
    */
   this.trackedPointers_ = {};
@@ -109,9 +109,9 @@ ol.interaction.Pointer.centroid = function(pointerEvents) {
 ol.interaction.Pointer.prototype.isPointerDraggingEvent_ = function(mapBrowserEvent) {
   var type = mapBrowserEvent.type;
   return (
-      type === ol.MapBrowserEvent.EventType.POINTERDOWN ||
-      type === ol.MapBrowserEvent.EventType.POINTERDRAG ||
-      type === ol.MapBrowserEvent.EventType.POINTERUP);
+    type === ol.MapBrowserEventType.POINTERDOWN ||
+      type === ol.MapBrowserEventType.POINTERDRAG ||
+      type === ol.MapBrowserEventType.POINTERUP);
 };
 
 
@@ -123,14 +123,15 @@ ol.interaction.Pointer.prototype.updateTrackedPointers_ = function(mapBrowserEve
   if (this.isPointerDraggingEvent_(mapBrowserEvent)) {
     var event = mapBrowserEvent.pointerEvent;
 
-    if (mapBrowserEvent.type == ol.MapBrowserEvent.EventType.POINTERUP) {
-      delete this.trackedPointers_[event.pointerId];
+    var id = event.pointerId.toString();
+    if (mapBrowserEvent.type == ol.MapBrowserEventType.POINTERUP) {
+      delete this.trackedPointers_[id];
     } else if (mapBrowserEvent.type ==
-        ol.MapBrowserEvent.EventType.POINTERDOWN) {
-      this.trackedPointers_[event.pointerId] = event;
-    } else if (event.pointerId in this.trackedPointers_) {
+        ol.MapBrowserEventType.POINTERDOWN) {
+      this.trackedPointers_[id] = event;
+    } else if (id in this.trackedPointers_) {
       // update only when there was a pointerdown event for this pointer
-      this.trackedPointers_[event.pointerId] = event;
+      this.trackedPointers_[id] = event;
     }
     this.targetPointers = ol.obj.getValues(this.trackedPointers_);
   }
@@ -184,18 +185,20 @@ ol.interaction.Pointer.handleEvent = function(mapBrowserEvent) {
   var stopEvent = false;
   this.updateTrackedPointers_(mapBrowserEvent);
   if (this.handlingDownUpSequence) {
-    if (mapBrowserEvent.type == ol.MapBrowserEvent.EventType.POINTERDRAG) {
+    if (mapBrowserEvent.type == ol.MapBrowserEventType.POINTERDRAG) {
       this.handleDragEvent_(mapBrowserEvent);
-    } else if (mapBrowserEvent.type == ol.MapBrowserEvent.EventType.POINTERUP) {
-      this.handlingDownUpSequence = this.handleUpEvent_(mapBrowserEvent);
+    } else if (mapBrowserEvent.type == ol.MapBrowserEventType.POINTERUP) {
+      var handledUp = this.handleUpEvent_(mapBrowserEvent);
+      this.handlingDownUpSequence = handledUp && this.targetPointers.length > 0;
     }
-  }
-  if (mapBrowserEvent.type == ol.MapBrowserEvent.EventType.POINTERDOWN) {
-    var handled = this.handleDownEvent_(mapBrowserEvent);
-    this.handlingDownUpSequence = handled;
-    stopEvent = this.shouldStopEvent(handled);
-  } else if (mapBrowserEvent.type == ol.MapBrowserEvent.EventType.POINTERMOVE) {
-    this.handleMoveEvent_(mapBrowserEvent);
+  } else {
+    if (mapBrowserEvent.type == ol.MapBrowserEventType.POINTERDOWN) {
+      var handled = this.handleDownEvent_(mapBrowserEvent);
+      this.handlingDownUpSequence = handled;
+      stopEvent = this.shouldStopEvent(handled);
+    } else if (mapBrowserEvent.type == ol.MapBrowserEventType.POINTERMOVE) {
+      this.handleMoveEvent_(mapBrowserEvent);
+    }
   }
   return !stopEvent;
 };

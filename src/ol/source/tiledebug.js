@@ -2,6 +2,7 @@ goog.provide('ol.source.TileDebug');
 
 goog.require('ol');
 goog.require('ol.Tile');
+goog.require('ol.TileState');
 goog.require('ol.dom');
 goog.require('ol.size');
 goog.require('ol.source.Tile');
@@ -45,7 +46,7 @@ ol.source.TileDebug.prototype.getTile = function(z, x, y) {
     var tileCoord = [z, x, y];
     var textTileCoord = this.getTileCoordForTileUrlFunction(tileCoord);
     var text = !textTileCoord ? '' :
-        this.getTileCoordForTileUrlFunction(textTileCoord).toString();
+      this.getTileCoordForTileUrlFunction(textTileCoord).toString();
     var tile = new ol.source.TileDebug.Tile_(tileCoord, tileSize, text);
     this.tileCache.set(tileCoordKey, tile);
     return tile;
@@ -63,7 +64,7 @@ ol.source.TileDebug.prototype.getTile = function(z, x, y) {
  */
 ol.source.TileDebug.Tile_ = function(tileCoord, tileSize, text) {
 
-  ol.Tile.call(this, tileCoord, ol.Tile.State.LOADED);
+  ol.Tile.call(this, tileCoord, ol.TileState.LOADED);
 
   /**
    * @private
@@ -111,3 +112,9 @@ ol.source.TileDebug.Tile_.prototype.getImage = function() {
     return context.canvas;
   }
 };
+
+
+/**
+ * @override
+ */
+ol.source.TileDebug.Tile_.prototype.load = function() {};
