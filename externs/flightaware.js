@@ -28,6 +28,6 @@ ol.source.Vector.prototype.forEachFeatureInExtent = function(){};
 
 // Also used in FAMap.olExtras.Source.ClusterMeters
 ol.source.Cluster.prototype.loadFeatures = function(){};
-ol.source.Cluster.prototype.onSourceChange_ = function(){};
-ol.source.Cluster.prototype.cluster_ = function(){};
-ol.source.Cluster.prototype.createCluster_ = function(){};
+ol.source.Cluster.prototype.onSourceChange = function(){};
+ol.source.Cluster.prototype.cluster = function(){};
+ol.source.Cluster.prototype.createCluster = function(){};
