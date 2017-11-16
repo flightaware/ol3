@@ -8210,6 +8210,18 @@ olx.FrameState.prototype.pixelRatio;
  */
 olx.FrameState.prototype.time;
 
+/**
+ * @type {ol.TileQueue}
+ * @api
+ */
+olx.FrameState.prototype.tileQueue;
+
+/**
+ * @type {Object}
+ * @api
+ */
+olx.FrameState.prototype.wantedTiles;
+
 
 /**
  * @type {olx.ViewState}
