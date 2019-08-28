@@ -1,15 +1,14 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Image');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj.Projection');
-goog.require('ol.source.ImageWMS');
-goog.require('ol.source.TileWMS');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {Image as ImageLayer, Tile as TileLayer} from '../src/ol/layer.js';
+import Projection from '../src/ol/proj/Projection.js';
+import ImageWMS from '../src/ol/source/ImageWMS.js';
+import TileWMS from '../src/ol/source/TileWMS.js';
 
 
-var layers = [
-  new ol.layer.Tile({
-    source: new ol.source.TileWMS({
+const layers = [
+  new TileLayer({
+    source: new TileWMS({
       attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
           'en/home.html">Pixelmap 1:1000000 / geo.admin.ch</a>',
       crossOrigin: 'anonymous',
@@ -20,8 +19,8 @@ var layers = [
       url: 'https://wms.geo.admin.ch/'
     })
   }),
-  new ol.layer.Image({
-    source: new ol.source.ImageWMS({
+  new ImageLayer({
+    source: new ImageWMS({
       attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
           'en/home.html">National parks / geo.admin.ch</a>',
       crossOrigin: 'anonymous',
@@ -37,15 +36,15 @@ var layers = [
 // projection object. Requesting tiles only needs the code together with a
 // tile grid of Cartesian coordinates; it does not matter how those
 // coordinates relate to latitude or longitude.
-var projection = new ol.proj.Projection({
+const projection = new Projection({
   code: 'EPSG:21781',
   units: 'm'
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: layers,
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [660000, 190000],
     projection: projection,
     zoom: 9

@@ -1,18 +1,15 @@
-/*global createMapDiv, disposeMap*/
-goog.provide('ol.test.interaction.KeyboardPan');
+import Map from '../../../../src/ol/Map.js';
+import MapBrowserEvent from '../../../../src/ol/MapBrowserEvent.js';
+import View from '../../../../src/ol/View.js';
+import Event from '../../../../src/ol/events/Event.js';
 
-goog.require('ol.Map');
-goog.require('ol.MapBrowserEvent');
-goog.require('ol.View');
-goog.require('ol.events.Event');
-goog.require('ol.interaction.Interaction');
 describe('ol.interaction.KeyboardPan', function() {
-  var map;
+  let map;
 
   beforeEach(function() {
-    map = new ol.Map({
+    map = new Map({
       target: createMapDiv(100, 100),
-      view: new ol.View({
+      view: new View({
         center: [0, 0],
         resolutions: [1],
         zoom: 0
@@ -26,25 +23,35 @@ describe('ol.interaction.KeyboardPan', function() {
 
   describe('handleEvent()', function() {
     it('pans on arrow keys', function() {
-      var spy = sinon.spy(ol.interaction.Interaction, 'pan');
-      var event = new ol.MapBrowserEvent('keydown', map, {
+      const view = map.getView();
+      const spy = sinon.spy(view, 'animate_');
+      const event = new MapBrowserEvent('keydown', map, {
         type: 'keydown',
         target: map.getTargetElement(),
-        preventDefault: ol.events.Event.prototype.preventDefault
+        preventDefault: Event.prototype.preventDefault
       });
+
       event.originalEvent.keyCode = 40; // DOWN
       map.handleMapBrowserEvent(event);
+      expect(spy.getCall(0).args[0].center).to.eql([0, -128]);
+      view.setCenter([0, 0]);
+
       event.originalEvent.keyCode = 38; // UP
       map.handleMapBrowserEvent(event);
+      expect(spy.getCall(1).args[0].center).to.eql([0, 128]);
+      view.setCenter([0, 0]);
+
       event.originalEvent.keyCode = 37; // LEFT
       map.handleMapBrowserEvent(event);
+      expect(spy.getCall(2).args[0].center).to.eql([-128, 0]);
+      view.setCenter([0, 0]);
+
       event.originalEvent.keyCode = 39; // RIGHT
       map.handleMapBrowserEvent(event);
-      expect(spy.getCall(0).args[2]).to.eql([0, -128]);
-      expect(spy.getCall(1).args[2]).to.eql([0, 128]);
-      expect(spy.getCall(2).args[2]).to.eql([-128, 0]);
-      expect(spy.getCall(3).args[2]).to.eql([128, 0]);
-      ol.interaction.Interaction.pan.restore();
+      expect(spy.getCall(3).args[0].center).to.eql([128, 0]);
+      view.setCenter([0, 0]);
+
+      view.animate_.restore();
     });
   });
 

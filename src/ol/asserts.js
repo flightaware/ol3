@@ -1,14 +1,14 @@
-goog.provide('ol.asserts');
-
-goog.require('ol.AssertionError');
-
+/**
+ * @module ol/asserts
+ */
+import AssertionError from './AssertionError.js';
 
 /**
  * @param {*} assertion Assertion we expected to be truthy.
  * @param {number} errorCode Error code.
  */
-ol.asserts.assert = function(assertion, errorCode) {
+export function assert(assertion, errorCode) {
   if (!assertion) {
-    throw new ol.AssertionError(errorCode);
+    throw new AssertionError(errorCode);
   }
-};
+}

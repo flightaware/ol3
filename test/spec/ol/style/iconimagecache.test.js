@@ -1,69 +1,80 @@
-goog.provide('ol.test.style.IconImageCache');
-
-goog.require('ol');
-goog.require('ol.events');
-goog.require('ol.style');
-goog.require('ol.style.IconImage');
+import {VOID} from '../../../../src/ol/functions.js';
+import {listen} from '../../../../src/ol/events.js';
+import {shared as iconImageCache} from '../../../../src/ol/style/IconImageCache.js';
+import IconImage from '../../../../src/ol/style/IconImage.js';
 
 describe('ol.style.IconImageCache', function() {
-  var originalMaxCacheSize;
+  let originalMaxCacheSize;
 
   beforeEach(function() {
-    var cache = ol.style.iconImageCache;
-    cache.clear();
-    originalMaxCacheSize = cache.maxCacheSize;
-    cache.maxCacheSize_ = 4;
+    iconImageCache.clear();
+    originalMaxCacheSize = iconImageCache.maxCacheSize;
+    iconImageCache.maxCacheSize_ = 4;
   });
 
   afterEach(function() {
-    var cache = ol.style.iconImageCache;
-    cache.maxCacheSize_ = originalMaxCacheSize;
-    cache.clear();
+    iconImageCache.maxCacheSize_ = originalMaxCacheSize;
+    iconImageCache.clear();
   });
 
   describe('#expire', function() {
     it('expires images when expected', function() {
-      var cache = ol.style.iconImageCache;
-
-      var i, src, iconImage;
+      let i, src, iconImage;
 
       for (i = 0; i < 4; ++i) {
         src = i + '';
-        iconImage = new ol.style.IconImage(src, null);
-        cache.set(src, null, null, iconImage);
+        iconImage = new IconImage(null, src);
+        iconImageCache.set(src, null, null, iconImage);
       }
 
-      expect(cache.cacheSize_).to.eql(4);
+      expect(iconImageCache.cacheSize_).to.eql(4);
 
-      cache.expire();
-      expect(cache.cacheSize_).to.eql(4);
+      iconImageCache.expire();
+      expect(iconImageCache.cacheSize_).to.eql(4);
 
       src = '4';
-      iconImage = new ol.style.IconImage(src, null);
-      cache.set(src, null, null, iconImage);
-      expect(cache.cacheSize_).to.eql(5);
+      iconImage = new IconImage(null, src);
+      iconImageCache.set(src, null, null, iconImage);
+      expect(iconImageCache.cacheSize_).to.eql(5);
 
-      cache.expire(); // remove '0' and '4'
-      expect(cache.cacheSize_).to.eql(3);
+      iconImageCache.expire(); // remove '0' and '4'
+      expect(iconImageCache.cacheSize_).to.eql(3);
 
       src = '0';
-      iconImage = new ol.style.IconImage(src, null);
-      ol.events.listen(iconImage, 'change',
-          ol.nullFunction, false);
-      cache.set(src, null, null, iconImage);
-      expect(cache.cacheSize_).to.eql(4);
+      iconImage = new IconImage(null, src);
+      listen(iconImage, 'change', VOID, false);
+      iconImageCache.set(src, null, null, iconImage);
+      expect(iconImageCache.cacheSize_).to.eql(4);
 
       src = '4';
-      iconImage = new ol.style.IconImage(src, null);
-      ol.events.listen(iconImage, 'change',
-          ol.nullFunction, false);
-      cache.set(src, null, null, iconImage);
-      expect(cache.cacheSize_).to.eql(5);
+      iconImage = new IconImage(null, src);
+      listen(iconImage, 'change', VOID, false);
+      iconImageCache.set(src, null, null, iconImage);
+      expect(iconImageCache.cacheSize_).to.eql(5);
 
       // check that '0' and '4' are not removed from the cache
-      cache.expire();
-      expect(cache.get('0', null, null)).to.not.be(null);
-      expect(cache.get('4', null, null)).to.not.be(null);
+      iconImageCache.expire();
+      expect(iconImageCache.get('0', null, null)).to.not.be(null);
+      expect(iconImageCache.get('4', null, null)).to.not.be(null);
+    });
+  });
+
+  describe('#setSize', function() {
+    it('sets max cache size and expires cache', function() {
+      let i, src, iconImage;
+
+      for (i = 0; i < 3; ++i) {
+        src = i + '';
+        iconImage = new IconImage(null, src);
+        iconImageCache.set(src, null, null, iconImage);
+      }
+
+      expect(iconImageCache.cacheSize_).to.eql(3);
+
+      iconImageCache.setSize(2);
+
+      expect(iconImageCache.maxCacheSize_).to.eql(2);
+      expect(iconImageCache.cacheSize_).to.eql(2);
     });
   });
 });

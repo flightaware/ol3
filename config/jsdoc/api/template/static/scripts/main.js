@@ -12,13 +12,18 @@ $(function () {
                 var $item = $(v);
 
                 if ($item.data('name') && regexp.test($item.data('name'))) {
+                    const container = $item.parent().parent().parent();
+                    container.show();
+                    container.closest('.itemMembers').show();
+                    container.closest('.item').show();
                     $item.show();
                     $item.closest('.itemMembers').show();
                     $item.closest('.item').show();
                 }
             });
         } else {
-            $el.find('.item, .itemMembers').show();
+            $el.find('.item, .itemMembers').hide();
+            $('.navigation>ul>li').show();
         }
 
         $el.find('.list').scrollTop(0);
@@ -30,7 +35,11 @@ $(function () {
     });
 
     // Show an item related a current documentation automatically
-    var filename = $('.page-title').data('filename').replace(/\.[a-z]+$/, '');
+    var filename = $('.page-title').data('filename')
+        .replace(/\.[a-z]+$/, '')
+        .replace('module-', 'module:')
+        .replace(/_/g, '/')
+        .replace(/-/g, '~');
     var $currentItem = $('.navigation .item[data-name*="' + filename + '"]:eq(0)');
 
     if ($currentItem.length) {
@@ -85,33 +94,28 @@ $(function () {
     var srcLinks = $('div.tag-source');
     srcLinks.each(function(i, el) {
       var textParts = el.innerHTML.trim().split(', ');
-      var link = 'https://github.com/openlayers/ol3/blob/v' + currentVersion + '/' +
+      var link = 'https://github.com/openlayers/openlayers/blob/v' + currentVersion + '/src/ol/' +
           textParts[0];
       el.innerHTML = '<a href="' + link + '">' + textParts[0] + '</a>, ' +
           '<a href="' + link + textParts[1].replace('line ', '#L') + '">' +
           textParts[1] + '</a>';
     });
 
-    // show/hide unstable items
-    var links = $('a[href^="ol."]');
-    var unstable = $('.unstable');
-    var stabilityToggle = $('#stability-toggle');
-    stabilityToggle.change(function() {
-        unstable.toggleClass('hidden', this.checked);
-        var search = this.checked ? '?stableonly=true' : '';
-        links.each(function(i, el) {
-            this.href = this.pathname + search + this.hash;
-        });
-        if (history.replaceState) {
-            var url = window.location.pathname + search + window.location.hash;
-            history.replaceState({}, '', url);
+    // Highlighting current anchor
+
+    var anchors = $('.anchor');
+    var _onHashChange = function () {
+        var activeHash = window.document.location.hash
+            .replace(/\./g, '\\.') // Escape dot in element id
+            .replace(/\~/g, '\\~'); // Escape tilde in element id
+
+        anchors.removeClass('highlighted');
+
+        if (activeHash.length > 0) {
+            anchors.filter(activeHash).addClass('highlighted');
         }
-        return false;
-    });
-    var search = window.location.search;
-    links.each(function(i, el) {
-        this.href = this.pathname + search + this.hash;
-    });
-    stabilityToggle.prop('checked', search === '?stableonly=true');
-    unstable.toggleClass('hidden', stabilityToggle[0].checked);
+    };
+
+    $(window).on('hashchange', _onHashChange);
+    _onHashChange();
 });

@@ -1,36 +1,34 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control.ZoomSlider');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {ZoomSlider} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
 
 /**
  * Helper method for map-creation.
  *
  * @param {string} divId The id of the div for the map.
- * @return {ol.Map} The ol.Map instance.
+ * @return {Map} The map instance.
  */
-var createMap = function(divId) {
-  var source, layer, map, zoomslider;
-
-  source = new ol.source.OSM();
-  layer = new ol.layer.Tile({
+function createMap(divId) {
+  const source = new OSM();
+  const layer = new TileLayer({
     source: source
   });
-  map = new ol.Map({
+  const map = new Map({
     layers: [layer],
     target: divId,
-    view: new ol.View({
+    view: new View({
       center: [0, 0],
       zoom: 2
     })
   });
-  zoomslider = new ol.control.ZoomSlider();
+  const zoomslider = new ZoomSlider();
   map.addControl(zoomslider);
   return map;
-};
+}
 
-var map1 = createMap('map1');
-var map2 = createMap('map2');
-var map3 = createMap('map3');
+const map1 = createMap('map1');
+const map2 = createMap('map2');
+const map3 = createMap('map3');

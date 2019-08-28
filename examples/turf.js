@@ -1,36 +1,32 @@
-// NOCOMPILE
-// this example uses turf.js for which we don't have an externs file.
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
 
 
-var source = new ol.source.Vector();
+const source = new VectorSource();
 fetch('data/geojson/roads-seoul.geojson').then(function(response) {
   return response.json();
 }).then(function(json) {
-  var format = new ol.format.GeoJSON();
-  var features = format.readFeatures(json);
-  var street = features[0];
+  const format = new GeoJSON();
+  const features = format.readFeatures(json);
+  const street = features[0];
 
   // convert to a turf.js feature
-  var turfLine = format.writeFeatureObject(street);
+  const turfLine = format.writeFeatureObject(street);
 
   // show a marker every 200 meters
-  var distance = 0.2;
+  const distance = 0.2;
 
   // get the line length in kilometers
-  var length = turf.lineDistance(turfLine, 'kilometers');
-  for (var i = 1; i <= length / distance; i++) {
-    var turfPoint = turf.along(turfLine, i * distance, 'kilometers');
+  const length = turf.lineDistance(turfLine, 'kilometers');
+  for (let i = 1; i <= length / distance; i++) {
+    const turfPoint = turf.along(turfLine, i * distance, 'kilometers');
 
     // convert the generated point to a OpenLayers feature
-    var marker = format.readFeature(turfPoint);
+    const marker = format.readFeature(turfPoint);
     marker.getGeometry().transform('EPSG:4326', 'EPSG:3857');
     source.addFeature(marker);
   }
@@ -38,19 +34,19 @@ fetch('data/geojson/roads-seoul.geojson').then(function(response) {
   street.getGeometry().transform('EPSG:4326', 'EPSG:3857');
   source.addFeature(street);
 });
-var vectorLayer = new ol.layer.Vector({
+const vectorLayer = new VectorLayer({
   source: source
 });
 
-var rasterLayer = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const rasterLayer = new TileLayer({
+  source: new OSM()
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [rasterLayer, vectorLayer],
   target: document.getElementById('map'),
-  view: new ol.View({
-    center: ol.proj.fromLonLat([126.980366, 37.526540]),
+  view: new View({
+    center: fromLonLat([126.980366, 37.526540]),
     zoom: 15
   })
 });

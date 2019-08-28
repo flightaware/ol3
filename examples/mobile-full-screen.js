@@ -1,21 +1,21 @@
-goog.require('ol.Geolocation');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.BingMaps');
+import Geolocation from '../src/ol/Geolocation.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
 
 
-var view = new ol.View({
+const view = new View({
   center: [0, 0],
   zoom: 2
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.BingMaps({
-        key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF',
-        imagerySet: 'Road'
+    new TileLayer({
+      source: new BingMaps({
+        key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
+        imagerySet: 'RoadOnDemand'
       })
     })
   ],
@@ -23,7 +23,7 @@ var map = new ol.Map({
   view: view
 });
 
-var geolocation = new ol.Geolocation({
+const geolocation = new Geolocation({
   projection: view.getProjection(),
   tracking: true
 });

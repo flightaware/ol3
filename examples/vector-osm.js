@@ -1,73 +1,69 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.format.OSMXML');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.loadingstrategy');
-goog.require('ol.proj');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
-goog.require('ol.tilegrid');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import OSMXML from '../src/ol/format/OSMXML.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {bbox as bboxStrategy} from '../src/ol/loadingstrategy.js';
+import {transformExtent} from '../src/ol/proj.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
 
-var styles = {
+let map = null;
+
+const styles = {
   'amenity': {
-    'parking': new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    'parking': new Style({
+      stroke: new Stroke({
         color: 'rgba(170, 170, 170, 1.0)',
         width: 1
       }),
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: 'rgba(170, 170, 170, 0.3)'
       })
     })
   },
   'building': {
-    '.*': new ol.style.Style({
+    '.*': new Style({
       zIndex: 100,
-      stroke: new ol.style.Stroke({
+      stroke: new Stroke({
         color: 'rgba(246, 99, 79, 1.0)',
         width: 1
       }),
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: 'rgba(246, 99, 79, 0.3)'
       })
     })
   },
   'highway': {
-    'service': new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    'service': new Style({
+      stroke: new Stroke({
         color: 'rgba(255, 255, 255, 1.0)',
         width: 2
       })
     }),
-    '.*': new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    '.*': new Style({
+      stroke: new Stroke({
         color: 'rgba(255, 255, 255, 1.0)',
         width: 3
       })
     })
   },
   'landuse': {
-    'forest|grass|allotments': new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    'forest|grass|allotments': new Style({
+      stroke: new Stroke({
         color: 'rgba(140, 208, 95, 1.0)',
         width: 1
       }),
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: 'rgba(140, 208, 95, 0.3)'
       })
     })
   },
   'natural': {
-    'tree': new ol.style.Style({
-      image: new ol.style.Circle({
+    'tree': new Style({
+      image: new CircleStyle({
         radius: 2,
-        fill: new ol.style.Fill({
+        fill: new Fill({
           color: 'rgba(140, 208, 95, 1.0)'
         }),
         stroke: null
@@ -76,26 +72,34 @@ var styles = {
   }
 };
 
-var vectorSource = new ol.source.Vector({
-  format: new ol.format.OSMXML(),
-  url: function(extent, resolution, projection) {
-    var epsg4326Extent =
-        ol.proj.transformExtent(extent, projection, 'EPSG:4326');
-    return 'http://overpass-api.de/api/xapi?map?bbox=' +
-        epsg4326Extent.join(',');
+const vectorSource = new VectorSource({
+  format: new OSMXML(),
+  loader: function(extent, resolution, projection) {
+    const epsg4326Extent = transformExtent(extent, projection, 'EPSG:4326');
+    const client = new XMLHttpRequest();
+    client.open('POST', 'https://overpass-api.de/api/interpreter');
+    client.addEventListener('load', function() {
+      const features = new OSMXML().readFeatures(client.responseText, {
+        featureProjection: map.getView().getProjection()
+      });
+      vectorSource.addFeatures(features);
+    });
+    const query = '(node(' +
+        epsg4326Extent[1] + ',' + epsg4326Extent[0] + ',' +
+        epsg4326Extent[3] + ',' + epsg4326Extent[2] +
+        ');rel(bn)->.foo;way(bn);node(w)->.foo;rel(bw););out meta;';
+    client.send(query);
   },
-  strategy: ol.loadingstrategy.tile(ol.tilegrid.createXYZ({
-    maxZoom: 19
-  }))
+  strategy: bboxStrategy
 });
 
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: vectorSource,
   style: function(feature) {
-    for (var key in styles) {
-      var value = feature.get(key);
+    for (const key in styles) {
+      const value = feature.get(key);
       if (value !== undefined) {
-        for (var regexp in styles[key]) {
+        for (const regexp in styles[key]) {
           if (new RegExp(regexp).test(value)) {
             return styles[key][regexp];
           }
@@ -106,22 +110,17 @@ var vector = new ol.layer.Vector({
   }
 });
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
+const raster = new TileLayer({
+  source: new BingMaps({
     imagerySet: 'Aerial',
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
   })
 });
 
-var map = new ol.Map({
+map = new Map({
   layers: [raster, vector],
   target: document.getElementById('map'),
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     center: [739218, 5906096],
     maxZoom: 19,
     zoom: 17

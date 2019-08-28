@@ -1,8 +1,6 @@
-goog.provide('ol.math');
-
-goog.require('ol');
-goog.require('ol.asserts');
-
+/**
+ * @module ol/math
+ */
 
 /**
  * Takes a number and clamps it to within the provided bounds.
@@ -12,9 +10,9 @@ goog.require('ol.asserts');
  * @return {number} The input number if it is within bounds, or the nearest
  *     number within the bounds.
  */
-ol.math.clamp = function(value, min, max) {
+export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
-};
+}
 
 
 /**
@@ -26,32 +24,22 @@ ol.math.clamp = function(value, min, max) {
  * @param {number} x X.
  * @return {number} Hyperbolic cosine of x.
  */
-ol.math.cosh = (function() {
+export const cosh = (function() {
   // Wrapped in a iife, to save the overhead of checking for the native
   // implementation on every invocation.
-  var cosh;
+  let cosh;
   if ('cosh' in Math) {
     // The environment supports the native Math.cosh function, use it…
     cosh = Math.cosh;
   } else {
     // … else, use the reference implementation of MDN:
     cosh = function(x) {
-      var y = Math.exp(x);
+      const y = /** @type {Math} */ (Math).exp(x);
       return (y + 1 / y) / 2;
     };
   }
   return cosh;
 }());
-
-
-/**
- * @param {number} x X.
- * @return {number} The smallest power of two greater than or equal to x.
- */
-ol.math.roundUpToPowerOfTwo = function(x) {
-  ol.asserts.assert(0 < x, 29); // `x` must be greater than `0`
-  return Math.pow(2, Math.ceil(Math.log(x) / Math.LN2));
-};
 
 
 /**
@@ -65,11 +53,11 @@ ol.math.roundUpToPowerOfTwo = function(x) {
  * @param {number} y2 Y2.
  * @return {number} Squared distance.
  */
-ol.math.squaredSegmentDistance = function(x, y, x1, y1, x2, y2) {
-  var dx = x2 - x1;
-  var dy = y2 - y1;
+export function squaredSegmentDistance(x, y, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
   if (dx !== 0 || dy !== 0) {
-    var t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
+    const t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
     if (t > 1) {
       x1 = x2;
       y1 = y2;
@@ -78,8 +66,8 @@ ol.math.squaredSegmentDistance = function(x, y, x1, y1, x2, y2) {
       y1 += dy * t;
     }
   }
-  return ol.math.squaredDistance(x, y, x1, y1);
-};
+  return squaredDistance(x, y, x1, y1);
+}
 
 
 /**
@@ -90,36 +78,29 @@ ol.math.squaredSegmentDistance = function(x, y, x1, y1, x2, y2) {
  * @param {number} y2 Y2.
  * @return {number} Squared distance.
  */
-ol.math.squaredDistance = function(x1, y1, x2, y2) {
-  var dx = x2 - x1;
-  var dy = y2 - y1;
+export function squaredDistance(x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
   return dx * dx + dy * dy;
-};
+}
 
 
 /**
  * Solves system of linear equations using Gaussian elimination method.
  *
- * @param {Array.<Array.<number>>} mat Augmented matrix (n x n + 1 column)
+ * @param {Array<Array<number>>} mat Augmented matrix (n x n + 1 column)
  *                                     in row-major order.
- * @return {Array.<number>} The resulting vector.
+ * @return {Array<number>} The resulting vector.
  */
-ol.math.solveLinearSystem = function(mat) {
-  var n = mat.length;
+export function solveLinearSystem(mat) {
+  const n = mat.length;
 
-  if (ol.DEBUG) {
-    for (var row = 0; row < n; row++) {
-      console.assert(mat[row].length == n + 1,
-                          'every row should have correct number of columns');
-    }
-  }
-
-  for (var i = 0; i < n; i++) {
+  for (let i = 0; i < n; i++) {
     // Find max in the i-th column (ignoring i - 1 first rows)
-    var maxRow = i;
-    var maxEl = Math.abs(mat[i][i]);
-    for (var r = i + 1; r < n; r++) {
-      var absValue = Math.abs(mat[r][i]);
+    let maxRow = i;
+    let maxEl = Math.abs(mat[i][i]);
+    for (let r = i + 1; r < n; r++) {
+      const absValue = Math.abs(mat[r][i]);
       if (absValue > maxEl) {
         maxEl = absValue;
         maxRow = r;
@@ -131,14 +112,14 @@ ol.math.solveLinearSystem = function(mat) {
     }
 
     // Swap max row with i-th (current) row
-    var tmp = mat[maxRow];
+    const tmp = mat[maxRow];
     mat[maxRow] = mat[i];
     mat[i] = tmp;
 
     // Subtract the i-th row to make all the remaining rows 0 in the i-th column
-    for (var j = i + 1; j < n; j++) {
-      var coef = -mat[j][i] / mat[i][i];
-      for (var k = i; k < n + 1; k++) {
+    for (let j = i + 1; j < n; j++) {
+      const coef = -mat[j][i] / mat[i][i];
+      for (let k = i; k < n + 1; k++) {
         if (i == k) {
           mat[j][k] = 0;
         } else {
@@ -149,15 +130,15 @@ ol.math.solveLinearSystem = function(mat) {
   }
 
   // Solve Ax=b for upper triangular matrix A (mat)
-  var x = new Array(n);
-  for (var l = n - 1; l >= 0; l--) {
+  const x = new Array(n);
+  for (let l = n - 1; l >= 0; l--) {
     x[l] = mat[l][n] / mat[l][l];
-    for (var m = l - 1; m >= 0; m--) {
+    for (let m = l - 1; m >= 0; m--) {
       mat[m][n] -= mat[m][l] * x[l];
     }
   }
   return x;
-};
+}
 
 
 /**
@@ -166,9 +147,9 @@ ol.math.solveLinearSystem = function(mat) {
  * @param {number} angleInRadians Angle in radians.
  * @return {number} Angle in degrees.
  */
-ol.math.toDegrees = function(angleInRadians) {
+export function toDegrees(angleInRadians) {
   return angleInRadians * 180 / Math.PI;
-};
+}
 
 
 /**
@@ -177,9 +158,9 @@ ol.math.toDegrees = function(angleInRadians) {
  * @param {number} angleInDegrees Angle in degrees.
  * @return {number} Angle in radians.
  */
-ol.math.toRadians = function(angleInDegrees) {
+export function toRadians(angleInDegrees) {
   return angleInDegrees * Math.PI / 180;
-};
+}
 
 /**
  * Returns the modulo of a / b, depending on the sign of b.
@@ -188,10 +169,10 @@ ol.math.toRadians = function(angleInDegrees) {
  * @param {number} b Divisor.
  * @return {number} Modulo.
  */
-ol.math.modulo = function(a, b) {
-  var r = a % b;
+export function modulo(a, b) {
+  const r = a % b;
   return r * b < 0 ? r + b : r;
-};
+}
 
 /**
  * Calculates the linearly interpolated value of x between a and b.
@@ -201,6 +182,6 @@ ol.math.modulo = function(a, b) {
  * @param {number} x Value to be interpolated.
  * @return {number} Interpolated value.
  */
-ol.math.lerp = function(a, b, x) {
+export function lerp(a, b, x) {
   return a + x * (b - a);
-};
+}

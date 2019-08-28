@@ -1,21 +1,18 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Fill');
-goog.require('ol.style.RegularShape');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import VectorLayer from '../src/ol/layer/Vector.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Fill, RegularShape, Stroke, Style} from '../src/ol/style.js';
 
 
-var stroke = new ol.style.Stroke({color: 'black', width: 2});
-var fill = new ol.style.Fill({color: 'red'});
+const stroke = new Stroke({color: 'black', width: 2});
+const fill = new Fill({color: 'red'});
 
-var styles = {
-  'square': new ol.style.Style({
-    image: new ol.style.RegularShape({
+const styles = {
+  'square': new Style({
+    image: new RegularShape({
       fill: fill,
       stroke: stroke,
       points: 4,
@@ -23,8 +20,8 @@ var styles = {
       angle: Math.PI / 4
     })
   }),
-  'triangle': new ol.style.Style({
-    image: new ol.style.RegularShape({
+  'triangle': new Style({
+    image: new RegularShape({
       fill: fill,
       stroke: stroke,
       points: 3,
@@ -33,8 +30,8 @@ var styles = {
       angle: 0
     })
   }),
-  'star': new ol.style.Style({
-    image: new ol.style.RegularShape({
+  'star': new Style({
+    image: new RegularShape({
       fill: fill,
       stroke: stroke,
       points: 5,
@@ -43,8 +40,8 @@ var styles = {
       angle: 0
     })
   }),
-  'cross': new ol.style.Style({
-    image: new ol.style.RegularShape({
+  'cross': new Style({
+    image: new RegularShape({
       fill: fill,
       stroke: stroke,
       points: 4,
@@ -53,8 +50,8 @@ var styles = {
       angle: 0
     })
   }),
-  'x': new ol.style.Style({
-    image: new ol.style.RegularShape({
+  'x': new Style({
+    image: new RegularShape({
       fill: fill,
       stroke: stroke,
       points: 4,
@@ -66,30 +63,30 @@ var styles = {
 };
 
 
-var styleKeys = ['x', 'cross', 'star', 'triangle', 'square'];
-var count = 250;
-var features = new Array(count);
-var e = 4500000;
-for (var i = 0; i < count; ++i) {
-  var coordinates = [2 * e * Math.random() - e, 2 * e * Math.random() - e];
-  features[i] = new ol.Feature(new ol.geom.Point(coordinates));
+const styleKeys = ['x', 'cross', 'star', 'triangle', 'square'];
+const count = 250;
+const features = new Array(count);
+const e = 4500000;
+for (let i = 0; i < count; ++i) {
+  const coordinates = [2 * e * Math.random() - e, 2 * e * Math.random() - e];
+  features[i] = new Feature(new Point(coordinates));
   features[i].setStyle(styles[styleKeys[Math.floor(Math.random() * 5)]]);
 }
 
-var source = new ol.source.Vector({
+const source = new VectorSource({
   features: features
 });
 
-var vectorLayer = new ol.layer.Vector({
+const vectorLayer = new VectorLayer({
   source: source
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
     vectorLayer
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })

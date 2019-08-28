@@ -5,9 +5,15 @@
     "common": false,
     "createMapboxStreetsV6Style": false,
     "d3": false,
+    "geojsonvt": false,
+    "GyroNorm": false,
     "jsPDF": false,
     "jsts": false,
+    "mapboxgl": false,
+    "saveAs": false,
+    "toastr": false,
     "topojson": false,
+    "topolis": false,
     "turf": false
   },
   "rules": {

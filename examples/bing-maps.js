@@ -1,24 +1,24 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.BingMaps');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
 
 
-var styles = [
-  'Road',
+const styles = [
+  'RoadOnDemand',
   'Aerial',
-  'AerialWithLabels',
-  'collinsBart',
-  'ordnanceSurvey'
+  'AerialWithLabelsOnDemand',
+  'CanvasDark',
+  'OrdnanceSurvey'
 ];
-var layers = [];
-var i, ii;
+const layers = [];
+let i, ii;
 for (i = 0, ii = styles.length; i < ii; ++i) {
-  layers.push(new ol.layer.Tile({
+  layers.push(new TileLayer({
     visible: false,
     preload: Infinity,
-    source: new ol.source.BingMaps({
-      key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF',
+    source: new BingMaps({
+      key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
       imagerySet: styles[i]
       // use maxZoom 19 to see stretched tiles instead of the BingMaps
       // "no photos at this zoom level" tiles
@@ -26,22 +26,19 @@ for (i = 0, ii = styles.length; i < ii; ++i) {
     })
   }));
 }
-var map = new ol.Map({
+const map = new Map({
   layers: layers,
-  // Improve user experience by loading tiles while dragging/zooming. Will make
-  // zooming choppy on mobile or slow devices.
-  loadTilesWhileInteracting: true,
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-6655.5402445057125, 6709968.258934638],
     zoom: 13
   })
 });
 
-var select = document.getElementById('layer-select');
+const select = document.getElementById('layer-select');
 function onChange() {
-  var style = select.value;
-  for (var i = 0, ii = layers.length; i < ii; ++i) {
+  const style = select.value;
+  for (let i = 0, ii = layers.length; i < ii; ++i) {
     layers[i].setVisible(styles[i] === style);
   }
 }

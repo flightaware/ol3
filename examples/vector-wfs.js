@@ -1,48 +1,46 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.loadingstrategy');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {bbox as bboxStrategy} from '../src/ol/loadingstrategy.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Stroke, Style} from '../src/ol/style.js';
 
 
-var vectorSource = new ol.source.Vector({
-  format: new ol.format.GeoJSON(),
+const vectorSource = new VectorSource({
+  format: new GeoJSON(),
   url: function(extent) {
-    return 'http://demo.boundlessgeo.com/geoserver/wfs?service=WFS&' +
+    return 'https://ahocevar.com/geoserver/wfs?service=WFS&' +
         'version=1.1.0&request=GetFeature&typename=osm:water_areas&' +
         'outputFormat=application/json&srsname=EPSG:3857&' +
         'bbox=' + extent.join(',') + ',EPSG:3857';
   },
-  strategy: ol.loadingstrategy.bbox
+  strategy: bboxStrategy
 });
 
 
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: vectorSource,
-  style: new ol.style.Style({
-    stroke: new ol.style.Stroke({
+  style: new Style({
+    stroke: new Stroke({
       color: 'rgba(0, 0, 255, 1.0)',
       width: 2
     })
   })
 });
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
+const raster = new TileLayer({
+  source: new BingMaps({
     imagerySet: 'Aerial',
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [-8908887.277395891, 5381918.072437216],
     maxZoom: 19,
     zoom: 12

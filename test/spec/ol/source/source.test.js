@@ -1,167 +1,135 @@
-goog.provide('ol.test.source.Source');
-
-goog.require('ol.Attribution');
-goog.require('ol.proj');
-goog.require('ol.source.Source');
+import {get as getProjection} from '../../../../src/ol/proj.js';
+import Source from '../../../../src/ol/source/Source.js';
 
 
 describe('ol.source.Source', function() {
 
   describe('constructor', function() {
     it('returns a source', function() {
-      var source = new ol.source.Source({
-        projection: ol.proj.get('EPSG:4326')
+      const source = new Source({
+        projection: getProjection('EPSG:4326')
       });
-      expect(source).to.be.a(ol.source.Source);
+      expect(source).to.be.a(Source);
     });
   });
 
   describe('config option `attributions`', function() {
     it('accepts undefined', function() {
-      var source = new ol.source.Source({});
-      var attributions = source.getAttributions();
+      const source = new Source({});
+      const attributions = source.getAttributions();
       expect(attributions).to.be(null);
     });
+
     it('accepts a single string', function() {
-      var source = new ol.source.Source({
+      const source = new Source({
         attributions: 'Humpty'
       });
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(1);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty']);
     });
+
     it('accepts an array of strings', function() {
-      var source = new ol.source.Source({
+      const source = new Source({
         attributions: ['Humpty', 'Dumpty']
       });
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1].getHTML()).to.be('Dumpty');
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty', 'Dumpty']);
     });
-    it('accepts a single ol.Attribution', function() {
-      var passedAttribution = new ol.Attribution({html: 'Humpty'});
-      var source = new ol.source.Source({
-        attributions: passedAttribution
+
+    it('accepts a function that returns a string', function() {
+      const source = new Source({
+        attributions: function() {
+          return 'Humpty';
+        }
       });
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(1);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0]).to.be(passedAttribution);
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.be('Humpty');
     });
-    it('accepts an array of ol.Attribution', function() {
-      var firstAttribution = new ol.Attribution({html: 'Humpty'});
-      var secondAttribution = new ol.Attribution({html: 'Dumpty'});
-      var source = new ol.source.Source({
-        attributions: [firstAttribution, secondAttribution]
+
+    it('accepts a function that returns an array of strings', function() {
+      const source = new Source({
+        attributions: function() {
+          return ['Humpty', 'Dumpty'];
+        }
       });
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0]).to.be(firstAttribution);
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1]).to.be(secondAttribution);
-    });
-    it('accepts an array with a string and an ol.Attribution', function() {
-      var attribution = new ol.Attribution({html: 'Dumpty'});
-      var source = new ol.source.Source({
-        attributions: ['Humpty', attribution]
-      });
-      var attributions = source.getAttributions();
-      expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1]).to.be(attribution);
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty', 'Dumpty']);
     });
   });
 
   describe('#refresh()', function() {
     it('dispatches the change event', function() {
-      var source = new ol.source.Source({
-        projection: ol.proj.get('EPSG:4326')
+      const source = new Source({
+        projection: getProjection('EPSG:4326')
       });
-      var changedSpy = sinon.spy();
+      const changedSpy = sinon.spy();
       source.on('change', changedSpy);
       source.refresh();
       expect(changedSpy.called).to.be.ok();
     });
   });
 
-  describe('#setAttributions`', function() {
-    var source = null;
+  describe('#setAttributions()', function() {
+    let source = null;
 
     beforeEach(function() {
-      source = new ol.source.Source({
+      source = new Source({
         attributions: 'before'
       });
     });
+
     afterEach(function() {
       source = null;
     });
 
     it('accepts undefined', function() {
       source.setAttributions();
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.be(null);
     });
+
     it('accepts a single string', function() {
       source.setAttributions('Humpty');
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(1);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty']);
     });
+
     it('accepts an array of strings', function() {
       source.setAttributions(['Humpty', 'Dumpty']);
-      var attributions = source.getAttributions();
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1].getHTML()).to.be('Dumpty');
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty', 'Dumpty']);
     });
-    it('accepts a single ol.Attribution', function() {
-      var passedAttribution = new ol.Attribution({html: 'Humpty'});
-      source.setAttributions(passedAttribution);
-      var attributions = source.getAttributions();
+
+    it('accepts a function that returns a string', function() {
+      source.setAttributions(function() {
+        return 'Humpty';
+      });
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(1);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0]).to.be(passedAttribution);
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql('Humpty');
     });
-    it('accepts an array of ol.Attribution', function() {
-      var firstAttribution = new ol.Attribution({html: 'Humpty'});
-      var secondAttribution = new ol.Attribution({html: 'Dumpty'});
-      source.setAttributions([firstAttribution, secondAttribution]);
-      var attributions = source.getAttributions();
+
+    it('accepts a function that returns an array of strings', function() {
+      source.setAttributions(function() {
+        return ['Humpty', 'Dumpty'];
+      });
+      const attributions = source.getAttributions();
       expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0]).to.be(firstAttribution);
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1]).to.be(secondAttribution);
-    });
-    it('accepts an array with a string and an ol.Attribution', function() {
-      var attribution = new ol.Attribution({html: 'Dumpty'});
-      source.setAttributions(['Humpty', attribution]);
-      var attributions = source.getAttributions();
-      expect(attributions).to.not.be(null);
-      expect(attributions).to.have.length(2);
-      expect(attributions[0]).to.be.an(ol.Attribution);
-      expect(attributions[0].getHTML()).to.be('Humpty');
-      expect(attributions[1]).to.be.an(ol.Attribution);
-      expect(attributions[1]).to.be(attribution);
+      expect(typeof attributions).to.be('function');
+      expect(attributions()).to.eql(['Humpty', 'Dumpty']);
     });
   });
 

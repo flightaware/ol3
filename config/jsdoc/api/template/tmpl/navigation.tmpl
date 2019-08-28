@@ -1,5 +1,8 @@
 <?js
 var self = this;
+function toShortName(name) {
+  return name.indexOf('module:') === 0 ? name.split('/').pop() : name;
+}
 ?>
 <div class="navigation">
     <div class="search">
@@ -7,16 +10,29 @@ var self = this;
     </div>
     <ul class="list">
     <?js
-    this.nav.forEach(function (item) {
+    let navbuilder;
+    this.nav.forEach(navbuilder = function (item) {
     ?>
         <li class="item" data-name="<?js= item.longname ?>">
             <span class="title">
-                <?js= self.linkto(item.longname, item.longname) ?>
+                <?js= self.linkto(item.longname, item.type === 'module' ? item.longname.replace('module:', '') : item.name) ?>
                 <?js if (item.type === 'namespace' &&
                         (item.members.length + item.typedefs.length + item.methods.length +
                          item.events.length > 0)) { ?>
                 <?js } ?>
             </span>
+            <ul class="members itemMembers">
+            <?js
+            if (item.classes.length) {
+            ?>
+            <span class="subtitle">Classes</span>
+            <?js
+                item.classes.forEach(function (v) {
+                    navbuilder(v);
+                });
+            }
+            ?>
+            </ul>
             <ul class="members itemMembers">
             <?js
             if (item.members.length) {
@@ -25,7 +41,7 @@ var self = this;
             <?js
                 item.members.forEach(function (v) {
             ?>
-                <li data-name="<?js= v.longname ?>"><?js= self.linkto(v.longname, v.name) ?></li>
+                <li data-name="<?js= v.longname ?>"><?js= self.linkto(v.longname, toShortName(v.name)) ?></li>
             <?js
                 });
             }
@@ -40,7 +56,7 @@ var self = this;
                 item.typedefs.forEach(function (v) {
             ?>
                 <li data-name="<?js= v.longname ?>" class="<?js= (v.stability && v.stability !== 'stable') ? 'unstable' : ''?>">
-                    <?js= self.linkto(v.longname, v.name) ?>
+                    <?js= self.linkto(v.longname, toShortName(v.name)) ?>
                 </li>
             <?js
                 });
@@ -57,7 +73,7 @@ var self = this;
                 item.methods.forEach(function (v) {
             ?>
                 <li data-name="<?js= v.longname ?>" class="<?js= (v.stability && v.stability !== 'stable') ? 'unstable' : ''?>">
-                    <?js= self.linkto(v.longname, v.name) ?>
+                    <?js= self.linkto(v.longname, toShortName(v.name)) ?>
                 </li>
             <?js
                 });
@@ -74,7 +90,7 @@ var self = this;
                     v = self.find({longname: v})[0] || {longname: v, name: v.split(/#?event:/)[1]};
             ?>
                 <li data-name="<?js= v.longname ?>" class="<?js= (v.stability && v.stability != 'stable') ? 'unstable' : '' ?>">
-                    <?js= self.linkto(v.longname, v.name) ?>
+                    <?js= self.linkto(v.longname, toShortName(v.name)) ?>
                 </li>
             <?js
                 });

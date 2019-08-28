@@ -43,7 +43,7 @@ Unknown `serverType` configured.
 
 ### 10
 
-The default `geometryFunction` can only handle `ol.geom.Point` geometries.
+The default `geometryFunction` can only handle `ol/geom/Point` geometries.
 
 ### 11
 
@@ -111,7 +111,7 @@ Features for `updates` must have an id set by the feature reader or `ol.Feature#
 
 ### 28
 
-`renderMode` must be `'image'`, `'hybrid'` or `'vector'`.
+`renderMode` must be `'image'` or `'hybrid'`.
 
 ### 29
 
@@ -139,7 +139,7 @@ Invalid geometry layout. Must be `XY`, `XYZ`, `XYM` or `XYZM`.
 
 ### 36
 
-Unknown SRS type. Expected `"name"` or `"EPSG"`.
+Unknown SRS type. Expected `"name"`.
 
 ### 37
 
@@ -164,14 +164,6 @@ Expected an `ol.style.Style` or an array of `ol.style.Style`.
 ### 43
 
 Expected `layers` to be an array or an `ol.Collection`.
-
-### 44
-
-`logo.href` should be a string.
-
-### 45
-
-`logo.src` should be a string.
 
 ### 46
 
@@ -216,3 +208,35 @@ The `{-y}` placeholder requires a tile grid with extent.
 ### 56
 
 `mapBrowserEvent` must originate from a pointer event.
+
+### 57
+
+At least 2 conditions are required.
+
+### 58
+
+Duplicate item added to a unique collection.  For example, it may be that you tried to add the same layer to a map twice.  Check for calls to `map.addLayer()` or other places where the map's layer collection is modified.
+
+### 59
+
+Invalid command found in the PBF.  This indicates that the loaded vector tile may be corrupt.
+
+### 60
+
+Missing or invalid `size`.
+
+### 61
+
+Cannot determine IIIF Image API version from provided image information JSON.
+
+### 62
+
+A `WebGLArrayBuffer` must either be of type `ELEMENT_ARRAY_BUFFER` or `ARRAY_BUFFER`.
+
+### 63
+
+Support for the `OES_element_index_uint` WebGL extension is mandatory for WebGL layers.
+
+### 64
+
+Layer opacity must be a number.

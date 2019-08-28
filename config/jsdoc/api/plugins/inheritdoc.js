@@ -1,11 +1,7 @@
 /*
  * This is a hack to prevent inheritDoc tags from entirely removing
  * documentation of the method that inherits the documentation.
- *
- * TODO: Remove this hack when https://github.com/jsdoc3/jsdoc/issues/53
- * is addressed.
  */
-
 
 exports.defineTags = function(dictionary) {
   dictionary.defineTag('inheritDoc', {
@@ -19,16 +15,16 @@ exports.defineTags = function(dictionary) {
 };
 
 
-var lookup = {};
-var incompleteByClass = {};
-var keepKeys = ['comment', 'meta', 'name', 'memberof', 'longname', 'augment',
-    'stability'];
+const lookup = {};
+const incompleteByClass = {};
+const keepKeys = ['comment', 'meta', 'name', 'memberof', 'longname', 'augment',
+  'stability'];
 
 exports.handlers = {
 
   newDoclet: function(e) {
-    var doclet = e.doclet;
-    var incompletes;
+    const doclet = e.doclet;
+    let incompletes;
     if (!(doclet.longname in lookup)) {
       lookup[doclet.longname] = [];
     }
@@ -45,9 +41,9 @@ exports.handlers = {
   },
 
   parseComplete: function(e) {
-    var ancestors, candidate, candidates, doclet, i, j, k, l, key;
-    var incompleteDoclet, stability, incomplete, incompletes;
-    var doclets = e.doclets;
+    let ancestors, candidate, candidates, doclet, i, j, k, l, key;
+    let incompleteDoclet, stability, incomplete, incompletes;
+    const doclets = e.doclets;
     for (i = doclets.length - 1; i >= 0; --i) {
       doclet = doclets[i];
       if (doclet.augments) {
@@ -92,10 +88,15 @@ exports.handlers = {
                     incompleteDoclet.stability = stability;
                     for (key in candidate) {
                       if (candidate.hasOwnProperty(key) &&
-                          keepKeys.indexOf(key) == -1) {
+                        keepKeys.indexOf(key) == -1) {
                         incompleteDoclet[key] = candidate[key];
                       }
                     }
+                    // We have found a matching parent doc and applied it so we
+                    // don't want to ignore this doclet anymore.
+                    incompleteDoclet.ignore = false;
+                    // We found a match so we can stop break
+                    break;
                   }
                 }
               }

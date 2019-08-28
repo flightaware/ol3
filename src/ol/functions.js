@@ -1,17 +1,26 @@
-goog.provide('ol.functions');
+/**
+ * @module ol/functions
+ */
 
 /**
  * Always returns true.
  * @returns {boolean} true.
  */
-ol.functions.TRUE = function() {
+export function TRUE() {
   return true;
-};
+}
 
 /**
  * Always returns false.
  * @returns {boolean} false.
  */
-ol.functions.FALSE = function() {
+export function FALSE() {
   return false;
-};
+}
+
+/**
+ * A reusable function, used e.g. as a default for callbacks.
+ *
+ * @return {void} Nothing.
+ */
+export function VOID() {}

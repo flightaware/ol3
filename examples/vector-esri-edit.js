@@ -1,28 +1,24 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.EsriJSON');
-goog.require('ol.interaction');
-goog.require('ol.interaction.Draw');
-goog.require('ol.interaction.Modify');
-goog.require('ol.interaction.Select');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.loadingstrategy');
-goog.require('ol.proj');
-goog.require('ol.source.Vector');
-goog.require('ol.source.XYZ');
-goog.require('ol.tilegrid');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import EsriJSON from '../src/ol/format/EsriJSON.js';
+import {defaults as defaultInteractions, Draw, Modify, Select} from '../src/ol/interaction.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {tile as tileStrategy} from '../src/ol/loadingstrategy.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import XYZ from '../src/ol/source/XYZ.js';
+import {createXYZ} from '../src/ol/tilegrid.js';
 
 
-var serviceUrl = 'http://services.arcgis.com/rOo16HdIMeOBI4Mb/arcgis/rest/' +
+const serviceUrl = 'https://services.arcgis.com/rOo16HdIMeOBI4Mb/arcgis/rest/' +
     'services/PDX_Pedestrian_Districts/FeatureServer/';
-var layer = '0';
+const layer = '0';
 
-var esrijsonFormat = new ol.format.EsriJSON();
+const esrijsonFormat = new EsriJSON();
 
-var vectorSource = new ol.source.Vector({
+const vectorSource = new VectorSource({
   loader: function(extent, resolution, projection) {
-    var url = serviceUrl + layer + '/query/?f=json&' +
+    const url = serviceUrl + layer + '/query/?f=json&' +
         'returnGeometry=true&spatialRel=esriSpatialRelIntersects&geometry=' +
         encodeURIComponent('{"xmin":' + extent[0] + ',"ymin":' +
             extent[1] + ',"xmax":' + extent[2] + ',"ymax":' + extent[3] +
@@ -35,7 +31,7 @@ var vectorSource = new ol.source.Vector({
             response.error.details.join('\n'));
       } else {
         // dataProjection will be read from document
-        var features = esrijsonFormat.readFeatures(response, {
+        const features = esrijsonFormat.readFeatures(response, {
           featureProjection: projection
         });
         if (features.length > 0) {
@@ -44,49 +40,49 @@ var vectorSource = new ol.source.Vector({
       }
     }});
   },
-  strategy: ol.loadingstrategy.tile(ol.tilegrid.createXYZ({
+  strategy: tileStrategy(createXYZ({
     tileSize: 512
   }))
 });
 
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: vectorSource
 });
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.XYZ({
-    attributions: 'Tiles © <a href="http://services.arcgisonline.com/ArcGIS/' +
+const raster = new TileLayer({
+  source: new XYZ({
+    attributions: 'Tiles © <a href="https://services.arcgisonline.com/ArcGIS/' +
         'rest/services/World_Topo_Map/MapServer">ArcGIS</a>',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/' +
         'World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
   })
 });
 
-var draw = new ol.interaction.Draw({
+const draw = new Draw({
   source: vectorSource,
-  type: /** @type {ol.geom.GeometryType} */ ('Polygon')
+  type: 'Polygon'
 });
 
-var select = new ol.interaction.Select();
+const select = new Select();
 select.setActive(false);
-var selected = select.getFeatures();
+const selected = select.getFeatures();
 
-var modify = new ol.interaction.Modify({
+const modify = new Modify({
   features: selected
 });
 modify.setActive(false);
 
-var map = new ol.Map({
-  interactions: ol.interaction.defaults().extend([draw, select, modify]),
+const map = new Map({
+  interactions: defaultInteractions().extend([draw, select, modify]),
   layers: [raster, vector],
   target: document.getElementById('map'),
-  view: new ol.View({
-    center: ol.proj.transform([-122.619, 45.512], 'EPSG:4326', 'EPSG:3857'),
+  view: new View({
+    center: fromLonLat([-122.619, 45.512]),
     zoom: 12
   })
 });
 
-var typeSelect = document.getElementById('type');
+const typeSelect = document.getElementById('type');
 
 
 /**
@@ -98,28 +94,28 @@ typeSelect.onchange = function() {
   modify.setActive(typeSelect.value === 'MODIFY');
 };
 
-var dirty = {};
+const dirty = {};
 
 selected.on('add', function(evt) {
-  var feature = evt.element;
+  const feature = evt.element;
   feature.on('change', function(evt) {
     dirty[evt.target.getId()] = true;
   });
 });
 
 selected.on('remove', function(evt) {
-  var feature = evt.element;
-  var fid = feature.getId();
+  const feature = evt.element;
+  const fid = feature.getId();
   if (dirty[fid] === true) {
-    var payload = '[' + esrijsonFormat.writeFeature(feature, {
+    const payload = '[' + esrijsonFormat.writeFeature(feature, {
       featureProjection: map.getView().getProjection()
     }) + ']';
-    var url = serviceUrl + layer + '/updateFeatures';
+    const url = serviceUrl + layer + '/updateFeatures';
     $.post(url, {f: 'json', features: payload}).done(function(data) {
-      var result = JSON.parse(data);
+      const result = JSON.parse(data);
       if (result.updateResults && result.updateResults.length > 0) {
         if (result.updateResults[0].success !== true) {
-          var error = result.updateResults[0].error;
+          const error = result.updateResults[0].error;
           alert(error.description + ' (' + error.code + ')');
         } else {
           delete dirty[fid];
@@ -130,19 +126,19 @@ selected.on('remove', function(evt) {
 });
 
 draw.on('drawend', function(evt) {
-  var feature = evt.feature;
-  var payload = '[' + esrijsonFormat.writeFeature(feature, {
+  const feature = evt.feature;
+  const payload = '[' + esrijsonFormat.writeFeature(feature, {
     featureProjection: map.getView().getProjection()
   }) + ']';
-  var url = serviceUrl + layer + '/addFeatures';
+  const url = serviceUrl + layer + '/addFeatures';
   $.post(url, {f: 'json', features: payload}).done(function(data) {
-    var result = JSON.parse(data);
+    const result = JSON.parse(data);
     if (result.addResults && result.addResults.length > 0) {
       if (result.addResults[0].success === true) {
         feature.setId(result.addResults[0]['objectId']);
         vectorSource.clear();
       } else {
-        var error = result.addResults[0].error;
+        const error = result.addResults[0].error;
         alert(error.description + ' (' + error.code + ')');
       }
     }

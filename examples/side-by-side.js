@@ -1,35 +1,37 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.has');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
 
-var layer = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const roadLayer = new TileLayer({
+  source: new BingMaps({
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
+    imagerySet: 'RoadOnDemand',
+    maxZoom: 19
+  })
 });
 
-var view = new ol.View({
-  center: [0, 0],
-  zoom: 1
+const aerialLayer = new TileLayer({
+  source: new BingMaps({
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
+    imagerySet: 'Aerial',
+    maxZoom: 19
+  })
 });
 
-var map1 = new ol.Map({
-  target: 'canvasMap',
-  layers: [layer],
+const view = new View({
+  center: [-6655.5402445057125, 6709968.258934638],
+  zoom: 13
+});
+
+const map1 = new Map({
+  target: 'roadMap',
+  layers: [roadLayer],
   view: view
 });
 
-if (ol.has.WEBGL) {
-  var map2 = new ol.Map({
-    target: 'webglMap',
-    renderer: /** @type {ol.renderer.Type} */ ('webgl'),
-    layers: [layer],
-    view: view
-  });
-} else {
-  var info = document.getElementById('no-webgl');
-  /**
-   * display error message
-   */
-  info.style.display = '';
-}
+const map2 = new Map({
+  target: 'aerialMap',
+  layers: [aerialLayer],
+  view: view
+});

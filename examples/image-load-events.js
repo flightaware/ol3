@@ -1,12 +1,12 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Image');
-goog.require('ol.source.ImageWMS');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import ImageLayer from '../src/ol/layer/Image.js';
+import ImageWMS from '../src/ol/source/ImageWMS.js';
 
 
 /**
  * Renders a progress bar.
- * @param {Element} el The target element.
+ * @param {HTMLElement} el The target element.
  * @constructor
  */
 function Progress(el) {
@@ -32,7 +32,7 @@ Progress.prototype.addLoading = function() {
  * Increment the count of loaded tiles.
  */
 Progress.prototype.addLoaded = function() {
-  var this_ = this;
+  const this_ = this;
   setTimeout(function() {
     ++this_.loaded;
     this_.update();
@@ -44,12 +44,12 @@ Progress.prototype.addLoaded = function() {
  * Update the progress bar.
  */
 Progress.prototype.update = function() {
-  var width = (this.loaded / this.loading * 100).toFixed(1) + '%';
+  const width = (this.loaded / this.loading * 100).toFixed(1) + '%';
   this.el.style.width = width;
   if (this.loading === this.loaded) {
     this.loading = 0;
     this.loaded = 0;
-    var this_ = this;
+    const this_ = this;
     setTimeout(function() {
       this_.hide();
     }, 500);
@@ -75,10 +75,10 @@ Progress.prototype.hide = function() {
   }
 };
 
-var progress = new Progress(document.getElementById('progress'));
+const progress = new Progress(document.getElementById('progress'));
 
-var source = new ol.source.ImageWMS({
-  url: 'http://demo.boundlessgeo.com/geoserver/wms',
+const source = new ImageWMS({
+  url: 'https://ahocevar.com/geoserver/wms',
   params: {'LAYERS': 'topp:states'},
   serverType: 'geoserver'
 });
@@ -94,13 +94,12 @@ source.on('imageloaderror', function() {
   progress.addLoaded();
 });
 
-var map = new ol.Map({
-  logo: false,
+const map = new Map({
   layers: [
-    new ol.layer.Image({source: source})
+    new ImageLayer({source: source})
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-10997148, 4569099],
     zoom: 4
   })

@@ -1,80 +1,37 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Polygon');
-goog.require('ol.interaction.Draw');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Draw from '../src/ol/interaction/Draw.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var source = new ol.source.Vector({wrapX: false});
+const source = new VectorSource({wrapX: false});
 
-var vector = new ol.layer.Vector({
-  source: source,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({
-      color: 'rgba(255, 255, 255, 0.2)'
-    }),
-    stroke: new ol.style.Stroke({
-      color: '#ffcc33',
-      width: 2
-    }),
-    image: new ol.style.Circle({
-      radius: 7,
-      fill: new ol.style.Fill({
-        color: '#ffcc33'
-      })
-    })
-  })
+const vector = new VectorLayer({
+  source: source
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-11000000, 4600000],
     zoom: 4
   })
 });
 
-var typeSelect = document.getElementById('type');
+const typeSelect = document.getElementById('type');
 
-var draw; // global so we can remove it later
+let draw; // global so we can remove it later
 function addInteraction() {
-  var value = typeSelect.value;
+  const value = typeSelect.value;
   if (value !== 'None') {
-    var geometryFunction, maxPoints;
-    if (value === 'Square') {
-      value = 'Circle';
-      geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
-    } else if (value === 'Box') {
-      value = 'LineString';
-      maxPoints = 2;
-      geometryFunction = function(coordinates, geometry) {
-        if (!geometry) {
-          geometry = new ol.geom.Polygon(null);
-        }
-        var start = coordinates[0];
-        var end = coordinates[1];
-        geometry.setCoordinates([
-          [start, [start[0], end[1]], end, [end[0], start[1]], start]
-        ]);
-        return geometry;
-      };
-    }
-    draw = new ol.interaction.Draw({
+    draw = new Draw({
       source: source,
-      type: /** @type {ol.geom.GeometryType} */ (value),
-      geometryFunction: geometryFunction,
-      maxPoints: maxPoints
+      type: typeSelect.value
     });
     map.addInteraction(draw);
   }

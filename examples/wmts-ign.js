@@ -1,63 +1,53 @@
-goog.require('ol.Attribution');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.extent');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.WMTS');
-goog.require('ol.tilegrid.WMTS');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {getWidth} from '../src/ol/extent.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {fromLonLat, get as getProjection} from '../src/ol/proj.js';
+import WMTS from '../src/ol/source/WMTS.js';
+import WMTSTileGrid from '../src/ol/tilegrid/WMTS.js';
 
 
-var map = new ol.Map({
+const map = new Map({
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     zoom: 5,
-    center: ol.proj.transform([5, 45], 'EPSG:4326', 'EPSG:3857')
+    center: fromLonLat([5, 45])
   })
 });
 
-var resolutions = [];
-var matrixIds = [];
-var proj3857 = ol.proj.get('EPSG:3857');
-var maxResolution = ol.extent.getWidth(proj3857.getExtent()) / 256;
+const resolutions = [];
+const matrixIds = [];
+const proj3857 = getProjection('EPSG:3857');
+const maxResolution = getWidth(proj3857.getExtent()) / 256;
 
-for (var i = 0; i < 18; i++) {
+for (let i = 0; i < 18; i++) {
   matrixIds[i] = i.toString();
   resolutions[i] = maxResolution / Math.pow(2, i);
 }
 
-var tileGrid = new ol.tilegrid.WMTS({
+const tileGrid = new WMTSTileGrid({
   origin: [-20037508, 20037508],
   resolutions: resolutions,
   matrixIds: matrixIds
 });
 
-// API key valid for 'openlayers.org' and 'localhost'.
-// Expiration date is 06/29/2018.
-var key = '2mqbg0z6cx7ube8gsou10nrt';
+// For more information about the IGN API key see
+// https://geoservices.ign.fr/blog/2017/06/28/geoportail_sans_compte.html
 
-var ign_source = new ol.source.WMTS({
-  url: 'https://wxs.ign.fr/' + key + '/wmts',
+const ign_source = new WMTS({
+  url: 'https://wxs.ign.fr/pratique/geoportail/wmts',
   layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS',
   matrixSet: 'PM',
   format: 'image/jpeg',
   projection: 'EPSG:3857',
   tileGrid: tileGrid,
   style: 'normal',
-  attributions: [new ol.Attribution({
-    html: '<a href="http://www.geoportail.fr/" target="_blank">' +
-        '<img src="http://api.ign.fr/geoportail/api/js/latest/' +
+  attributions: '<a href="http://www.geoportail.fr/" target="_blank">' +
+        '<img src="https://api.ign.fr/geoportail/api/js/latest/' +
         'theme/geoportal/img/logo_gp.gif"></a>'
-  })]
 });
 
-var ign = new ol.layer.Tile({
+const ign = new TileLayer({
   source: ign_source
 });
 

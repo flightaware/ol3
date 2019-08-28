@@ -1,72 +1,53 @@
-/* eslint-disable openlayers-internal/no-unused-requires */
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.MVT');
-goog.require('ol.layer.VectorTile');
-goog.require('ol.proj');
-goog.require('ol.source.VectorTile');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
-goog.require('ol.style.Text');
-goog.require('ol.tilegrid.TileGrid');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import MVT from '../src/ol/format/MVT.js';
+import VectorTileLayer from '../src/ol/layer/VectorTile.js';
+import {get as getProjection} from '../src/ol/proj.js';
+import VectorTileSource from '../src/ol/source/VectorTile.js';
+import {Fill, Icon, Stroke, Style, Text} from '../src/ol/style.js';
+import TileGrid from '../src/ol/tilegrid/TileGrid.js';
 
 
-var key = 'pk.eyJ1IjoiYWhvY2V2YXIiLCJhIjoiRk1kMWZaSSJ9.E5BkluenyWQMsBLsuByrmg';
+const key = 'pk.eyJ1IjoiYWhvY2V2YXIiLCJhIjoiY2pzbmg0Nmk5MGF5NzQzbzRnbDNoeHJrbiJ9.7_-_gL8ur7ZtEiNwRfCy7Q';
 
-// For how many zoom levels do we want to use the same vector tiles?
-// 1 means "use tiles from all zoom levels". 2 means "use the same tiles for 2
-// subsequent zoom levels".
-var reuseZoomLevels = 2;
-
-// Offset of loaded tiles from web mercator zoom level 0.
-// 0 means "At map zoom level 0, use tiles from zoom level 0". 1 means "At map
-// zoom level 0, use tiles from zoom level 1".
-var zoomOffset = 1;
-
-// Calculation of tile urls
-var resolutions = [];
-for (var z = zoomOffset / reuseZoomLevels; z <= 22 / reuseZoomLevels; ++z) {
-  resolutions.push(156543.03392804097 / Math.pow(2, z * reuseZoomLevels));
+// Calculation of resolutions that match zoom levels 1, 3, 5, 7, 9, 11, 13, 15.
+const resolutions = [];
+for (let i = 0; i <= 8; ++i) {
+  resolutions.push(156543.03392804097 / Math.pow(2, i * 2));
 }
+// Calculation of tile urls for zoom levels 1, 3, 5, 7, 9, 11, 13, 15.
 function tileUrlFunction(tileCoord) {
   return ('https://{a-d}.tiles.mapbox.com/v4/mapbox.mapbox-streets-v6/' +
       '{z}/{x}/{y}.vector.pbf?access_token=' + key)
-      .replace('{z}', String(tileCoord[0] * reuseZoomLevels + zoomOffset))
-      .replace('{x}', String(tileCoord[1]))
-      .replace('{y}', String(-tileCoord[2] - 1))
-      .replace('{a-d}', 'abcd'.substr(
-          ((tileCoord[1] << tileCoord[0]) + tileCoord[2]) % 4, 1));
+    .replace('{z}', String(tileCoord[0] * 2 - 1))
+    .replace('{x}', String(tileCoord[1]))
+    .replace('{y}', String(tileCoord[2]))
+    .replace('{a-d}', 'abcd'.substr(
+      ((tileCoord[1] << tileCoord[0]) + tileCoord[2]) % 4, 1));
 }
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.VectorTile({
-      renderMode: 'vector',
-      preload: Infinity,
-      source: new ol.source.VectorTile({
+    new VectorTileLayer({
+      source: new VectorTileSource({
         attributions: '© <a href="https://www.mapbox.com/map-feedback/">Mapbox</a> ' +
-          '© <a href="http://www.openstreetmap.org/copyright">' +
+          '© <a href="https://www.openstreetmap.org/copyright">' +
           'OpenStreetMap contributors</a>',
-        format: new ol.format.MVT(),
-        tileGrid: new ol.tilegrid.TileGrid({
-          extent: ol.proj.get('EPSG:3857').getExtent(),
-          resolutions: resolutions
+        format: new MVT(),
+        tileGrid: new TileGrid({
+          extent: getProjection('EPSG:3857').getExtent(),
+          resolutions: resolutions,
+          tileSize: 512
         }),
-        tilePixelRatio: 16,
         tileUrlFunction: tileUrlFunction
       }),
-      style: createMapboxStreetsV6Style()
+      style: createMapboxStreetsV6Style(Style, Fill, Stroke, Icon, Text)
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     minZoom: 1,
     zoom: 2
   })
 });
-
-// ol.style.Fill, ol.style.Icon, ol.style.Stroke, ol.style.Style and
-// ol.style.Text are required for createMapboxStreetsV6Style()

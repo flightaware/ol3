@@ -1,6 +1,4 @@
-goog.provide('ol.test.Geolocation');
-
-goog.require('ol.Geolocation');
+import Geolocation from '../../../src/ol/Geolocation.js';
 
 
 describe('ol.Geolocation', function() {
@@ -8,8 +6,8 @@ describe('ol.Geolocation', function() {
   describe('constructor', function() {
 
     it('can be constructed without arguments', function() {
-      var instance = new ol.Geolocation();
-      expect(instance).to.be.an(ol.Geolocation);
+      const instance = new Geolocation();
+      expect(instance).to.be.an(Geolocation);
     });
 
   });

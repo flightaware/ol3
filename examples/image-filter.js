@@ -1,25 +1,25 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.BingMaps');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
 
-var key = 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF';
+const key = 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5';
 
-var imagery = new ol.layer.Tile({
-  source: new ol.source.BingMaps({key: key, imagerySet: 'Aerial'})
+const imagery = new TileLayer({
+  source: new BingMaps({key: key, imagerySet: 'Aerial'})
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [imagery],
   target: 'map',
-  view: new ol.View({
-    center: ol.proj.fromLonLat([-120, 50]),
+  view: new View({
+    center: fromLonLat([-120, 50]),
     zoom: 6
   })
 });
 
-var kernels = {
+const kernels = {
   none: [
     0, 0, 0,
     0, 1, 0,
@@ -58,9 +58,9 @@ var kernels = {
 };
 
 function normalize(kernel) {
-  var len = kernel.length;
-  var normal = new Array(len);
-  var i, sum = 0;
+  const len = kernel.length;
+  const normal = new Array(len);
+  let i, sum = 0;
   for (i = 0; i < len; ++i) {
     sum += kernel[i];
   }
@@ -76,8 +76,8 @@ function normalize(kernel) {
   return normal;
 }
 
-var select = document.getElementById('kernel');
-var selectedKernel = normalize(kernels[select.value]);
+const select = document.getElementById('kernel');
+let selectedKernel = normalize(kernels[select.value]);
 
 
 /**
@@ -90,9 +90,9 @@ select.onchange = function() {
 
 
 /**
- * Apply a filter on "postcompose" events.
+ * Apply a filter on "postrender" events.
  */
-imagery.on('postcompose', function(event) {
+imagery.on('postrender', function(event) {
   convolve(event.context, selectedKernel);
 });
 
@@ -101,40 +101,40 @@ imagery.on('postcompose', function(event) {
  * Apply a convolution kernel to canvas.  This works for any size kernel, but
  * performance starts degrading above 3 x 3.
  * @param {CanvasRenderingContext2D} context Canvas 2d context.
- * @param {Array.<number>} kernel Kernel.
+ * @param {Array<number>} kernel Kernel.
  */
 function convolve(context, kernel) {
-  var canvas = context.canvas;
-  var width = canvas.width;
-  var height = canvas.height;
+  const canvas = context.canvas;
+  const width = canvas.width;
+  const height = canvas.height;
 
-  var size = Math.sqrt(kernel.length);
-  var half = Math.floor(size / 2);
+  const size = Math.sqrt(kernel.length);
+  const half = Math.floor(size / 2);
 
-  var inputData = context.getImageData(0, 0, width, height).data;
+  const inputData = context.getImageData(0, 0, width, height).data;
 
-  var output = context.createImageData(width, height);
-  var outputData = output.data;
+  const output = context.createImageData(width, height);
+  const outputData = output.data;
 
-  for (var pixelY = 0; pixelY < height; ++pixelY) {
-    var pixelsAbove = pixelY * width;
-    for (var pixelX = 0; pixelX < width; ++pixelX) {
-      var r = 0, g = 0, b = 0, a = 0;
-      for (var kernelY = 0; kernelY < size; ++kernelY) {
-        for (var kernelX = 0; kernelX < size; ++kernelX) {
-          var weight = kernel[kernelY * size + kernelX];
-          var neighborY = Math.min(
-              height - 1, Math.max(0, pixelY + kernelY - half));
-          var neighborX = Math.min(
-              width - 1, Math.max(0, pixelX + kernelX - half));
-          var inputIndex = (neighborY * width + neighborX) * 4;
+  for (let pixelY = 0; pixelY < height; ++pixelY) {
+    const pixelsAbove = pixelY * width;
+    for (let pixelX = 0; pixelX < width; ++pixelX) {
+      let r = 0, g = 0, b = 0, a = 0;
+      for (let kernelY = 0; kernelY < size; ++kernelY) {
+        for (let kernelX = 0; kernelX < size; ++kernelX) {
+          const weight = kernel[kernelY * size + kernelX];
+          const neighborY = Math.min(
+            height - 1, Math.max(0, pixelY + kernelY - half));
+          const neighborX = Math.min(
+            width - 1, Math.max(0, pixelX + kernelX - half));
+          const inputIndex = (neighborY * width + neighborX) * 4;
           r += inputData[inputIndex] * weight;
           g += inputData[inputIndex + 1] * weight;
           b += inputData[inputIndex + 2] * weight;
           a += inputData[inputIndex + 3] * weight;
         }
       }
-      var outputIndex = (pixelsAbove + pixelX) * 4;
+      const outputIndex = (pixelsAbove + pixelX) * 4;
       outputData[outputIndex] = r;
       outputData[outputIndex + 1] = g;
       outputData[outputIndex + 2] = b;

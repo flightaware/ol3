@@ -1,56 +1,48 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.interaction.Draw');
-goog.require('ol.interaction.Modify');
-goog.require('ol.interaction.Select');
-goog.require('ol.interaction.Snap');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {Draw, Modify, Select, Snap} from '../src/ol/interaction.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector(),
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({
+const vector = new VectorLayer({
+  source: new VectorSource(),
+  style: new Style({
+    fill: new Fill({
       color: 'rgba(255, 255, 255, 0.2)'
     }),
-    stroke: new ol.style.Stroke({
+    stroke: new Stroke({
       color: '#ffcc33',
       width: 2
     }),
-    image: new ol.style.Circle({
+    image: new CircleStyle({
       radius: 7,
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: '#ffcc33'
       })
     })
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-11000000, 4600000],
     zoom: 4
   })
 });
 
-var Modify = {
+const ExampleModify = {
   init: function() {
-    this.select = new ol.interaction.Select();
+    this.select = new Select();
     map.addInteraction(this.select);
 
-    this.modify = new ol.interaction.Modify({
+    this.modify = new Modify({
       features: this.select.getFeatures()
     });
     map.addInteraction(this.modify);
@@ -58,10 +50,12 @@ var Modify = {
     this.setEvents();
   },
   setEvents: function() {
-    var selectedFeatures = this.select.getFeatures();
+    const selectedFeatures = this.select.getFeatures();
 
     this.select.on('change:active', function() {
-      selectedFeatures.forEach(selectedFeatures.remove, selectedFeatures);
+      selectedFeatures.forEach(function(each) {
+        selectedFeatures.remove(each);
+      });
     });
   },
   setActive: function(active) {
@@ -69,11 +63,11 @@ var Modify = {
     this.modify.setActive(active);
   }
 };
-Modify.init();
+ExampleModify.init();
 
-var optionsForm = document.getElementById('options-form');
+const optionsForm = document.getElementById('options-form');
 
-var Draw = {
+const ExampleDraw = {
   init: function() {
     map.addInteraction(this.Point);
     this.Point.setActive(false);
@@ -81,24 +75,30 @@ var Draw = {
     this.LineString.setActive(false);
     map.addInteraction(this.Polygon);
     this.Polygon.setActive(false);
+    map.addInteraction(this.Circle);
+    this.Circle.setActive(false);
   },
-  Point: new ol.interaction.Draw({
+  Point: new Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('Point')
+    type: 'Point'
   }),
-  LineString: new ol.interaction.Draw({
+  LineString: new Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('LineString')
+    type: 'LineString'
   }),
-  Polygon: new ol.interaction.Draw({
+  Polygon: new Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('Polygon')
+    type: 'Polygon'
+  }),
+  Circle: new Draw({
+    source: vector.getSource(),
+    type: 'Circle'
   }),
   getActive: function() {
     return this.activeType ? this[this.activeType].getActive() : false;
   },
   setActive: function(active) {
-    var type = optionsForm.elements['draw-type'].value;
+    const type = optionsForm.elements['draw-type'].value;
     if (active) {
       this.activeType && this[this.activeType].setActive(false);
       this[type].setActive(true);
@@ -109,7 +109,7 @@ var Draw = {
     }
   }
 };
-Draw.init();
+ExampleDraw.init();
 
 
 /**
@@ -117,28 +117,28 @@ Draw.init();
  * @param {Event} e Change event.
  */
 optionsForm.onchange = function(e) {
-  var type = e.target.getAttribute('name');
-  var value = e.target.value;
+  const type = e.target.getAttribute('name');
+  const value = e.target.value;
   if (type == 'draw-type') {
-    Draw.getActive() && Draw.setActive(true);
+    ExampleDraw.getActive() && ExampleDraw.setActive(true);
   } else if (type == 'interaction') {
     if (value == 'modify') {
-      Draw.setActive(false);
-      Modify.setActive(true);
+      ExampleDraw.setActive(false);
+      ExampleModify.setActive(true);
     } else if (value == 'draw') {
-      Draw.setActive(true);
-      Modify.setActive(false);
+      ExampleDraw.setActive(true);
+      ExampleModify.setActive(false);
     }
   }
 };
 
-Draw.setActive(true);
-Modify.setActive(false);
+ExampleDraw.setActive(true);
+ExampleModify.setActive(false);
 
 // The snap interaction must be added after the Modify and Draw interactions
 // in order for its map browser event handlers to be fired first. Its handlers
 // are responsible of doing the snapping.
-var snap = new ol.interaction.Snap({
+const snap = new Snap({
   source: vector.getSource()
 });
 map.addInteraction(snap);

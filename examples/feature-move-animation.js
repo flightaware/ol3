@@ -1,21 +1,17 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.Polyline');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Polyline from '../src/ol/format/Polyline.js';
+import Point from '../src/ol/geom/Point.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from '../src/ol/style.js';
+import {getVectorContext} from '../src/ol/render.js';
 
 // This long string is placed here due to jsFiddle limitations.
 // It is usually loaded with AJAX.
-var polyline = [
+const polyline = [
   'hldhx@lnau`BCG_EaC??cFjAwDjF??uBlKMd@}@z@??aC^yk@z_@se@b[wFdE??wFfE}N',
   'fIoGxB_I\\gG}@eHoCyTmPqGaBaHOoD\\??yVrGotA|N??o[N_STiwAtEmHGeHcAkiA}^',
   'aMyBiHOkFNoI`CcVvM??gG^gF_@iJwC??eCcA]OoL}DwFyCaCgCcCwDcGwHsSoX??wI_E',
@@ -57,64 +53,63 @@ var polyline = [
   '~@ym@yjA??a@cFd@kBrCgDbAUnAcBhAyAdk@et@??kF}D??OL'
 ].join('');
 
-var route = /** @type {ol.geom.LineString} */ (new ol.format.Polyline({
+const route = /** @type {import("../src/ol/geom/LineString.js").default} */ (new Polyline({
   factor: 1e6
 }).readGeometry(polyline, {
   dataProjection: 'EPSG:4326',
   featureProjection: 'EPSG:3857'
 }));
 
-var routeCoords = route.getCoordinates();
-var routeLength = routeCoords.length;
+const routeCoords = route.getCoordinates();
+const routeLength = routeCoords.length;
 
-var routeFeature = new ol.Feature({
+const routeFeature = new Feature({
   type: 'route',
   geometry: route
 });
-var geoMarker = new ol.Feature({
+const geoMarker = /** @type Feature<import("../src/ol/geom/Point").default> */(new Feature({
   type: 'geoMarker',
-  geometry: new ol.geom.Point(routeCoords[0])
-});
-var startMarker = new ol.Feature({
+  geometry: new Point(routeCoords[0])
+}));
+const startMarker = new Feature({
   type: 'icon',
-  geometry: new ol.geom.Point(routeCoords[0])
+  geometry: new Point(routeCoords[0])
 });
-var endMarker = new ol.Feature({
+const endMarker = new Feature({
   type: 'icon',
-  geometry: new ol.geom.Point(routeCoords[routeLength - 1])
+  geometry: new Point(routeCoords[routeLength - 1])
 });
 
-var styles = {
-  'route': new ol.style.Style({
-    stroke: new ol.style.Stroke({
+const styles = {
+  'route': new Style({
+    stroke: new Stroke({
       width: 6, color: [237, 212, 0, 0.8]
     })
   }),
-  'icon': new ol.style.Style({
-    image: new ol.style.Icon({
+  'icon': new Style({
+    image: new Icon({
       anchor: [0.5, 1],
       src: 'data/icon.png'
     })
   }),
-  'geoMarker': new ol.style.Style({
-    image: new ol.style.Circle({
+  'geoMarker': new Style({
+    image: new CircleStyle({
       radius: 7,
-      snapToPixel: false,
-      fill: new ol.style.Fill({color: 'black'}),
-      stroke: new ol.style.Stroke({
+      fill: new Fill({color: 'black'}),
+      stroke: new Stroke({
         color: 'white', width: 2
       })
     })
   })
 };
 
-var animating = false;
-var speed, now;
-var speedInput = document.getElementById('speed');
-var startButton = document.getElementById('start-animation');
+let animating = false;
+let speed, now;
+const speedInput = document.getElementById('speed');
+const startButton = document.getElementById('start-animation');
 
-var vectorLayer = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vectorLayer = new VectorLayer({
+  source: new VectorSource({
     features: [routeFeature, geoMarker, startMarker, endMarker]
   }),
   style: function(feature) {
@@ -126,47 +121,46 @@ var vectorLayer = new ol.layer.Vector({
   }
 });
 
-var center = [-5639523.95, -3501274.52];
-var map = new ol.Map({
+const center = [-5639523.95, -3501274.52];
+const map = new Map({
   target: document.getElementById('map'),
-  loadTilesWhileAnimating: true,
-  view: new ol.View({
+  view: new View({
     center: center,
     zoom: 10,
     minZoom: 2,
     maxZoom: 19
   }),
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.BingMaps({
-        imagerySet: 'AerialWithLabels',
-        key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+    new TileLayer({
+      source: new BingMaps({
+        imagerySet: 'AerialWithLabelsOnDemand',
+        key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
       })
     }),
     vectorLayer
   ]
 });
 
-var moveFeature = function(event) {
-  var vectorContext = event.vectorContext;
-  var frameState = event.frameState;
+const moveFeature = function(event) {
+  const vectorContext = getVectorContext(event);
+  const frameState = event.frameState;
 
   if (animating) {
-    var elapsedTime = frameState.time - now;
+    const elapsedTime = frameState.time - now;
     // here the trick to increase speed is to jump some indexes
     // on lineString coordinates
-    var index = Math.round(speed * elapsedTime / 1000);
+    const index = Math.round(speed * elapsedTime / 1000);
 
     if (index >= routeLength) {
       stopAnimation(true);
       return;
     }
 
-    var currentPoint = new ol.geom.Point(routeCoords[index]);
-    var feature = new ol.Feature(currentPoint);
+    const currentPoint = new Point(routeCoords[index]);
+    const feature = new Feature(currentPoint);
     vectorContext.drawFeature(feature, styles.geoMarker);
   }
-  // tell OL3 to continue the postcompose animation
+  // tell OpenLayers to continue the postrender animation
   map.render();
 };
 
@@ -182,7 +176,7 @@ function startAnimation() {
     geoMarker.setStyle(null);
     // just in case you pan somewhere else
     map.getView().setCenter(center);
-    map.on('postcompose', moveFeature);
+    vectorLayer.on('postrender', moveFeature);
     map.render();
   }
 }
@@ -196,11 +190,11 @@ function stopAnimation(ended) {
   startButton.textContent = 'Start Animation';
 
   // if animation cancelled set the marker at the beginning
-  var coord = ended ? routeCoords[routeLength - 1] : routeCoords[0];
-  /** @type {ol.geom.Point} */ (geoMarker.getGeometry())
-    .setCoordinates(coord);
+  const coord = ended ? routeCoords[routeLength - 1] : routeCoords[0];
+  const geometry = geoMarker.getGeometry();
+  geometry.setCoordinates(coord);
   //remove listener
-  map.un('postcompose', moveFeature);
+  vectorLayer.un('postrender', moveFeature);
 }
 
 startButton.addEventListener('click', startAnimation, false);

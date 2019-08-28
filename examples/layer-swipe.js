@@ -1,39 +1,33 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import OSM from '../src/ol/source/OSM.js';
 
-var osm = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const osm = new TileLayer({
+  source: new OSM()
 });
-var bing = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF',
+const bing = new TileLayer({
+  source: new BingMaps({
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
     imagerySet: 'Aerial'
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [osm, bing],
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
-var swipe = document.getElementById('swipe');
+const swipe = document.getElementById('swipe');
 
-bing.on('precompose', function(event) {
-  var ctx = event.context;
-  var width = ctx.canvas.width * (swipe.value / 100);
+bing.on('prerender', function(event) {
+  const ctx = event.context;
+  const width = ctx.canvas.width * (swipe.value / 100);
 
   ctx.save();
   ctx.beginPath();
@@ -41,8 +35,8 @@ bing.on('precompose', function(event) {
   ctx.clip();
 });
 
-bing.on('postcompose', function(event) {
-  var ctx = event.context;
+bing.on('postrender', function(event) {
+  const ctx = event.context;
   ctx.restore();
 });
 

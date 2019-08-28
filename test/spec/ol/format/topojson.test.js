@@ -1,13 +1,11 @@
-goog.provide('ol.test.format.TopoJSON');
+import Feature from '../../../../src/ol/Feature.js';
+import MultiPolygon from '../../../../src/ol/geom/MultiPolygon.js';
+import Polygon from '../../../../src/ol/geom/Polygon.js';
+import FeatureFormat from '../../../../src/ol/format/Feature.js';
+import {transform} from '../../../../src/ol/proj.js';
+import TopoJSON from '../../../../src/ol/format/TopoJSON.js';
 
-goog.require('ol.Feature');
-goog.require('ol.geom.MultiPolygon');
-goog.require('ol.geom.Polygon');
-goog.require('ol.format.Feature');
-goog.require('ol.proj');
-goog.require('ol.format.TopoJSON');
-
-var aruba = {
+const aruba = {
   type: 'Topology',
   transform: {
     scale: [0.036003600360036005, 0.017361589674592462],
@@ -29,7 +27,7 @@ var aruba = {
   ]
 };
 
-var zeroId = {
+const zeroId = {
   type: 'Topology',
   objects: {
     foobar: {
@@ -42,29 +40,29 @@ var zeroId = {
 
 describe('ol.format.TopoJSON', function() {
 
-  var format;
+  let format;
   before(function() {
-    format = new ol.format.TopoJSON();
+    format = new TopoJSON();
   });
 
   describe('constructor', function() {
     it('creates a new format', function() {
-      expect(format).to.be.a(ol.format.Feature);
-      expect(format).to.be.a(ol.format.TopoJSON);
+      expect(format).to.be.a(FeatureFormat);
+      expect(format).to.be.a(TopoJSON);
     });
   });
 
   describe('#readFeaturesFromTopology_()', function() {
 
     it('creates an array of features from a topology', function() {
-      var features = format.readFeaturesFromObject(aruba);
+      const features = format.readFeaturesFromObject(aruba);
       expect(features).to.have.length(1);
 
-      var feature = features[0];
-      expect(feature).to.be.a(ol.Feature);
+      const feature = features[0];
+      expect(feature).to.be.a(Feature);
 
-      var geometry = feature.getGeometry();
-      expect(geometry).to.be.a(ol.geom.Polygon);
+      const geometry = feature.getGeometry();
+      expect(geometry).to.be.a(Polygon);
 
       // Parses identifier
       expect(feature.getId()).to.be(533);
@@ -78,11 +76,11 @@ describe('ol.format.TopoJSON', function() {
     });
 
     it('can read a feature with id equal to 0', function() {
-      var features = format.readFeaturesFromObject(zeroId);
+      const features = format.readFeaturesFromObject(zeroId);
       expect(features).to.have.length(1);
 
-      var feature = features[0];
-      expect(feature).to.be.a(ol.Feature);
+      const feature = features[0];
+      expect(feature).to.be.a(Feature);
       expect(feature.getId()).to.be(0);
     });
 
@@ -92,20 +90,20 @@ describe('ol.format.TopoJSON', function() {
 
     it('parses simple.json', function(done) {
       afterLoadText('spec/ol/format/topojson/simple.json', function(text) {
-        var features = format.readFeatures(text);
+        const features = format.readFeatures(text);
         expect(features.length).to.be(3);
 
-        var point = features[0].getGeometry();
+        const point = features[0].getGeometry();
         expect(point.getType()).to.be('Point');
         expect(point.getFlatCoordinates()).to.eql([102, 0.5]);
 
-        var line = features[1].getGeometry();
+        const line = features[1].getGeometry();
         expect(line.getType()).to.be('LineString');
         expect(line.getFlatCoordinates()).to.eql([
           102, 0, 103, 1, 104, 0, 105, 1
         ]);
 
-        var polygon = features[2].getGeometry();
+        const polygon = features[2].getGeometry();
         expect(polygon.getType()).to.be('Polygon');
         expect(polygon.getFlatCoordinates()).to.eql([
           100, 0, 100, 1, 101, 1, 101, 0, 100, 0
@@ -117,33 +115,33 @@ describe('ol.format.TopoJSON', function() {
 
     it('parses simple.json and transforms', function(done) {
       afterLoadText('spec/ol/format/topojson/simple.json', function(text) {
-        var features = format.readFeatures(text, {
+        const features = format.readFeatures(text, {
           featureProjection: 'EPSG:3857'
         });
         expect(features.length).to.be(3);
 
-        var point = features[0].getGeometry();
+        const point = features[0].getGeometry();
         expect(point.getType()).to.be('Point');
         expect(features[0].getGeometry().getCoordinates()).to.eql(
-            ol.proj.transform([102.0, 0.5], 'EPSG:4326', 'EPSG:3857'));
+          transform([102.0, 0.5], 'EPSG:4326', 'EPSG:3857'));
 
-        var line = features[1].getGeometry();
+        const line = features[1].getGeometry();
         expect(line.getType()).to.be('LineString');
         expect(line.getCoordinates()).to.eql([
-          ol.proj.transform([102.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([103.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([104.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([105.0, 1.0], 'EPSG:4326', 'EPSG:3857')
+          transform([102.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([103.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([104.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([105.0, 1.0], 'EPSG:4326', 'EPSG:3857')
         ]);
 
-        var polygon = features[2].getGeometry();
+        const polygon = features[2].getGeometry();
         expect(polygon.getType()).to.be('Polygon');
         expect(polygon.getCoordinates()).to.eql([[
-          ol.proj.transform([100.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([100.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([101.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([101.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
-          ol.proj.transform([100.0, 0.0], 'EPSG:4326', 'EPSG:3857')
+          transform([100.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([100.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([101.0, 1.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([101.0, 0.0], 'EPSG:4326', 'EPSG:3857'),
+          transform([100.0, 0.0], 'EPSG:4326', 'EPSG:3857')
         ]]);
 
         done();
@@ -153,25 +151,48 @@ describe('ol.format.TopoJSON', function() {
     it('parses world-110m.json', function(done) {
       afterLoadText('spec/ol/format/topojson/world-110m.json', function(text) {
 
-        var features = format.readFeatures(text);
+        const features = format.readFeatures(text);
         expect(features.length).to.be(178);
 
-        var first = features[0];
-        expect(first).to.be.a(ol.Feature);
-        var firstGeom = first.getGeometry();
-        expect(firstGeom).to.be.a(ol.geom.MultiPolygon);
+        const first = features[0];
+        expect(first).to.be.a(Feature);
+        const firstGeom = first.getGeometry();
+        expect(firstGeom).to.be.a(MultiPolygon);
         expect(firstGeom.getExtent()).to.eql(
-            [-180, -85.60903777459777, 180, 83.64513000000002]);
+          [-180, -85.60903777459777, 180, 83.64513000000002]);
 
-        var last = features[177];
-        expect(last).to.be.a(ol.Feature);
-        var lastGeom = last.getGeometry();
-        expect(lastGeom).to.be.a(ol.geom.Polygon);
+        const last = features[177];
+        expect(last).to.be.a(Feature);
+        const lastGeom = last.getGeometry();
+        expect(lastGeom).to.be.a(Polygon);
         expect(lastGeom.getExtent()).to.eql([
           25.26325263252633, -22.271802279310577,
           32.848528485284874, -15.50833810039586
         ]);
 
+        done();
+      });
+    });
+
+    it('sets the topology\'s child names as feature property', function(done) {
+      afterLoadText('spec/ol/format/topojson/world-110m.json', function(text) {
+        const format = new TopoJSON({
+          layerName: 'layer'
+        });
+        const features = format.readFeatures(text);
+        expect(features[0].get('layer')).to.be('land');
+        expect(features[177].get('layer')).to.be('countries');
+        done();
+      });
+    });
+
+    it('only parses features from specified topology\'s children', function(done) {
+      afterLoadText('spec/ol/format/topojson/world-110m.json', function(text) {
+        const format = new TopoJSON({
+          layers: ['land']
+        });
+        const features = format.readFeatures(text);
+        expect(features.length).to.be(1);
         done();
       });
     });

@@ -1,8 +1,6 @@
-goog.provide('ol.test.renderer.Map');
-
-goog.require('ol.Disposable');
-goog.require('ol.Map');
-goog.require('ol.renderer.Map');
+import Disposable from '../../../../src/ol/Disposable.js';
+import Map from '../../../../src/ol/Map.js';
+import MapRenderer from '../../../../src/ol/renderer/Map.js';
 
 
 describe('ol.renderer.Map', function() {
@@ -10,10 +8,10 @@ describe('ol.renderer.Map', function() {
   describe('constructor', function() {
 
     it('createst an instance', function() {
-      var map = new ol.Map({});
-      var renderer = new ol.renderer.Map(null, map);
-      expect(renderer).to.be.a(ol.renderer.Map);
-      expect(renderer).to.be.a(ol.Disposable);
+      const map = new Map({});
+      const renderer = new MapRenderer(null, map);
+      expect(renderer).to.be.a(MapRenderer);
+      expect(renderer).to.be.a(Disposable);
       renderer.dispose();
       map.dispose();
     });

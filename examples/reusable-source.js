@@ -1,25 +1,25 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.XYZ');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import XYZ from '../src/ol/source/XYZ.js';
 
-var urls = [
+const urls = [
   'https://{a-c}.tiles.mapbox.com/v3/mapbox.blue-marble-topo-jan/{z}/{x}/{y}.png',
   'https://{a-c}.tiles.mapbox.com/v3/mapbox.blue-marble-topo-bathy-jan/{z}/{x}/{y}.png',
   'https://{a-c}.tiles.mapbox.com/v3/mapbox.blue-marble-topo-jul/{z}/{x}/{y}.png',
   'https://{a-c}.tiles.mapbox.com/v3/mapbox.blue-marble-topo-bathy-jul/{z}/{x}/{y}.png'
 ];
 
-var source = new ol.source.XYZ();
+const source = new XYZ();
 
-var map = new ol.Map({
+const map = new Map({
   target: 'map',
   layers: [
-    new ol.layer.Tile({
+    new TileLayer({
       source: source
     })
   ],
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
@@ -30,9 +30,9 @@ function updateUrl(index) {
   source.setUrl(urls[index]);
 }
 
-var buttons = document.getElementsByClassName('switcher');
-for (var i = 0, ii = buttons.length; i < ii; ++i) {
-  var button = buttons[i];
+const buttons = document.getElementsByClassName('switcher');
+for (let i = 0, ii = buttons.length; i < ii; ++i) {
+  const button = buttons[i];
   button.addEventListener('click', updateUrl.bind(null, Number(button.value)));
 }
 

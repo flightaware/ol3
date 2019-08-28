@@ -1,14 +1,12 @@
-goog.provide('ol.test.control.ZoomToExtent');
-
-goog.require('ol.control.ZoomToExtent');
+import ZoomToExtent from '../../../../src/ol/control/ZoomToExtent.js';
 
 describe('ol.control.ZoomToExtent', function() {
 
   describe('constructor', function() {
 
     it('can be constructed without arguments', function() {
-      var instance = new ol.control.ZoomToExtent();
-      expect(instance).to.be.an(ol.control.ZoomToExtent);
+      const instance = new ZoomToExtent();
+      expect(instance).to.be.an(ZoomToExtent);
     });
 
   });

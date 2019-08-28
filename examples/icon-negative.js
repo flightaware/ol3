@@ -1,62 +1,61 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.interaction.Select');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Stamen');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import Select from '../src/ol/interaction/Select.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import Stamen from '../src/ol/source/Stamen.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Icon, Style} from '../src/ol/style.js';
 
 
 function createStyle(src, img) {
-  return new ol.style.Style({
-    image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+  return new Style({
+    image: new Icon({
       anchor: [0.5, 0.96],
+      crossOrigin: 'anonymous',
       src: src,
       img: img,
       imgSize: img ? [img.width, img.height] : undefined
-    }))
+    })
   });
 }
 
-var iconFeature = new ol.Feature(new ol.geom.Point([0, 0]));
+const iconFeature = new Feature(new Point([0, 0]));
 iconFeature.set('style', createStyle('data/icon.png', undefined));
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.Stamen({layer: 'watercolor'})
+    new TileLayer({
+      source: new Stamen({layer: 'watercolor'})
     }),
-    new ol.layer.Vector({
+    new VectorLayer({
       style: function(feature) {
         return feature.get('style');
       },
-      source: new ol.source.Vector({features: [iconFeature]})
+      source: new VectorSource({features: [iconFeature]})
     })
   ],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 3
   })
 });
 
-var selectStyle = {};
-var select = new ol.interaction.Select({
+const selectStyle = {};
+const select = new Select({
   style: function(feature) {
-    var image = feature.get('style').getImage().getImage();
+    const image = feature.get('style').getImage().getImage();
     if (!selectStyle[image.src]) {
-      var canvas = document.createElement('canvas');
-      var context = canvas.getContext('2d');
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
       canvas.width = image.width;
       canvas.height = image.height;
       context.drawImage(image, 0, 0, image.width, image.height);
-      var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      var data = imageData.data;
-      for (var i = 0, ii = data.length; i < ii; i = i + (i % 4 == 2 ? 2 : 1)) {
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      for (let i = 0, ii = data.length; i < ii; i = i + (i % 4 == 2 ? 2 : 1)) {
         data[i] = 255 - data[i];
       }
       context.putImageData(imageData, 0, 0);

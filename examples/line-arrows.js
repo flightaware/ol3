@@ -1,27 +1,23 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.interaction.Draw');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import Draw from '../src/ol/interaction/Draw.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Icon, Stroke, Style} from '../src/ol/style.js';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var source = new ol.source.Vector();
+const source = new VectorSource();
 
-var styleFunction = function(feature) {
-  var geometry = feature.getGeometry();
-  var styles = [
+const styleFunction = function(feature) {
+  const geometry = feature.getGeometry();
+  const styles = [
     // linestring
-    new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    new Style({
+      stroke: new Stroke({
         color: '#ffcc33',
         width: 2
       })
@@ -29,16 +25,16 @@ var styleFunction = function(feature) {
   ];
 
   geometry.forEachSegment(function(start, end) {
-    var dx = end[0] - start[0];
-    var dy = end[1] - start[1];
-    var rotation = Math.atan2(dy, dx);
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const rotation = Math.atan2(dy, dx);
     // arrows
-    styles.push(new ol.style.Style({
-      geometry: new ol.geom.Point(end),
-      image: new ol.style.Icon({
+    styles.push(new Style({
+      geometry: new Point(end),
+      image: new Icon({
         src: 'data/arrow.png',
         anchor: [0.75, 0.5],
-        rotateWithView: false,
+        rotateWithView: true,
         rotation: -rotation
       })
     }));
@@ -46,21 +42,21 @@ var styleFunction = function(feature) {
 
   return styles;
 };
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: source,
   style: styleFunction
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-11000000, 4600000],
     zoom: 4
   })
 });
 
-map.addInteraction(new ol.interaction.Draw({
+map.addInteraction(new Draw({
   source: source,
-  type: /** @type {ol.geom.GeometryType} */ ('LineString')
+  type: 'LineString'
 }));

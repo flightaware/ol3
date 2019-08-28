@@ -1,23 +1,23 @@
-goog.provide('ol.array');
-
-goog.require('ol');
+/**
+ * @module ol/array
+ */
 
 
 /**
  * Performs a binary search on the provided sorted list and returns the index of the item if found. If it can't be found it'll return -1.
  * https://github.com/darkskyapp/binary-search
  *
- * @param {Array.<*>} haystack Items to search through.
+ * @param {Array<*>} haystack Items to search through.
  * @param {*} needle The item to look for.
  * @param {Function=} opt_comparator Comparator function.
  * @return {number} The index of the item if found, -1 if not.
  */
-ol.array.binarySearch = function(haystack, needle, opt_comparator) {
-  var mid, cmp;
-  var comparator = opt_comparator || ol.array.numberSafeCompareFunction;
-  var low = 0;
-  var high = haystack.length;
-  var found = false;
+export function binarySearch(haystack, needle, opt_comparator) {
+  let mid, cmp;
+  const comparator = opt_comparator || numberSafeCompareFunction;
+  let low = 0;
+  let high = haystack.length;
+  let found = false;
 
   while (low < high) {
     /* Note that "(low + high) >>> 1" may overflow, and results in a typecast
@@ -26,7 +26,7 @@ ol.array.binarySearch = function(haystack, needle, opt_comparator) {
     cmp = +comparator(haystack[mid], needle);
 
     if (cmp < 0.0) { /* Too low. */
-      low  = mid + 1;
+      low = mid + 1;
 
     } else { /* Key found or too high */
       high = mid;
@@ -36,7 +36,7 @@ ol.array.binarySearch = function(haystack, needle, opt_comparator) {
 
   /* Key not found. */
   return found ? low : ~low;
-};
+}
 
 
 /**
@@ -46,38 +46,38 @@ ol.array.binarySearch = function(haystack, needle, opt_comparator) {
  * @return {number} A negative number, zero, or a positive number as the first
  *     argument is less than, equal to, or greater than the second.
  */
-ol.array.numberSafeCompareFunction = function(a, b) {
+export function numberSafeCompareFunction(a, b) {
   return a > b ? 1 : a < b ? -1 : 0;
-};
+}
 
 
 /**
  * Whether the array contains the given object.
- * @param {Array.<*>} arr The array to test for the presence of the element.
+ * @param {Array<*>} arr The array to test for the presence of the element.
  * @param {*} obj The object for which to test.
  * @return {boolean} The object is in the array.
  */
-ol.array.includes = function(arr, obj) {
+export function includes(arr, obj) {
   return arr.indexOf(obj) >= 0;
-};
+}
 
 
 /**
- * @param {Array.<number>} arr Array.
+ * @param {Array<number>} arr Array.
  * @param {number} target Target.
  * @param {number} direction 0 means return the nearest, > 0
  *    means return the largest nearest, < 0 means return the
  *    smallest nearest.
  * @return {number} Index.
  */
-ol.array.linearFindNearest = function(arr, target, direction) {
-  var n = arr.length;
+export function linearFindNearest(arr, target, direction) {
+  const n = arr.length;
   if (arr[0] <= target) {
     return 0;
   } else if (target <= arr[n - 1]) {
     return n - 1;
   } else {
-    var i;
+    let i;
     if (direction > 0) {
       for (i = 1; i < n; ++i) {
         if (arr[i] < target) {
@@ -105,95 +105,73 @@ ol.array.linearFindNearest = function(arr, target, direction) {
     }
     return n - 1;
   }
-};
+}
 
 
 /**
- * @param {Array.<*>} arr Array.
+ * @param {Array<*>} arr Array.
  * @param {number} begin Begin index.
  * @param {number} end End index.
  */
-ol.array.reverseSubArray = function(arr, begin, end) {
-  ol.DEBUG && console.assert(begin >= 0,
-      'Array begin index should be equal to or greater than 0');
-  ol.DEBUG && console.assert(end < arr.length,
-      'Array end index should be less than the array length');
+export function reverseSubArray(arr, begin, end) {
   while (begin < end) {
-    var tmp = arr[begin];
+    const tmp = arr[begin];
     arr[begin] = arr[end];
     arr[end] = tmp;
     ++begin;
     --end;
   }
-};
+}
 
 
 /**
- * @param {Array.<*>} arr Array.
- * @return {!Array.<?>} Flattened Array.
- */
-ol.array.flatten = function(arr) {
-  var data = arr.reduce(function(flattened, value) {
-    if (Array.isArray(value)) {
-      return flattened.concat(ol.array.flatten(value));
-    } else {
-      return flattened.concat(value);
-    }
-  }, []);
-  return data;
-};
-
-
-/**
- * @param {Array.<VALUE>} arr The array to modify.
- * @param {Array.<VALUE>|VALUE} data The elements or arrays of elements
- *     to add to arr.
+ * @param {Array<VALUE>} arr The array to modify.
+ * @param {!Array<VALUE>|VALUE} data The elements or arrays of elements to add to arr.
  * @template VALUE
  */
-ol.array.extend = function(arr, data) {
-  var i;
-  var extension = Array.isArray(data) ? data : [data];
-  var length = extension.length;
-  for (i = 0; i < length; i++) {
+export function extend(arr, data) {
+  const extension = Array.isArray(data) ? data : [data];
+  const length = extension.length;
+  for (let i = 0; i < length; i++) {
     arr[arr.length] = extension[i];
   }
-};
+}
 
 
 /**
- * @param {Array.<VALUE>} arr The array to modify.
+ * @param {Array<VALUE>} arr The array to modify.
  * @param {VALUE} obj The element to remove.
  * @template VALUE
  * @return {boolean} If the element was removed.
  */
-ol.array.remove = function(arr, obj) {
-  var i = arr.indexOf(obj);
-  var found = i > -1;
+export function remove(arr, obj) {
+  const i = arr.indexOf(obj);
+  const found = i > -1;
   if (found) {
     arr.splice(i, 1);
   }
   return found;
-};
+}
 
 
 /**
- * @param {Array.<VALUE>} arr The array to search in.
+ * @param {Array<VALUE>} arr The array to search in.
  * @param {function(VALUE, number, ?) : boolean} func The function to compare.
  * @template VALUE
- * @return {VALUE} The element found.
+ * @return {VALUE|null} The element found or null.
  */
-ol.array.find = function(arr, func) {
-  var length = arr.length >>> 0;
-  var value;
+export function find(arr, func) {
+  const length = arr.length >>> 0;
+  let value;
 
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     value = arr[i];
     if (func(value, i, arr)) {
       return value;
     }
   }
   return null;
-};
+}
 
 
 /**
@@ -201,28 +179,31 @@ ol.array.find = function(arr, func) {
  * @param {Array|Uint8ClampedArray} arr2 The second array to compare.
  * @return {boolean} Whether the two arrays are equal.
  */
-ol.array.equals = function(arr1, arr2) {
-  var len1 = arr1.length;
+export function equals(arr1, arr2) {
+  const len1 = arr1.length;
   if (len1 !== arr2.length) {
     return false;
   }
-  for (var i = 0; i < len1; i++) {
+  for (let i = 0; i < len1; i++) {
     if (arr1[i] !== arr2[i]) {
       return false;
     }
   }
   return true;
-};
+}
 
 
 /**
- * @param {Array.<*>} arr The array to sort (modifies original).
- * @param {Function} compareFnc Comparison function.
+ * Sort the passed array such that the relative order of equal elements is preverved.
+ * See https://en.wikipedia.org/wiki/Sorting_algorithm#Stability for details.
+ * @param {Array<*>} arr The array to sort (modifies original).
+ * @param {!function(*, *): number} compareFnc Comparison function.
+ * @api
  */
-ol.array.stableSort = function(arr, compareFnc) {
-  var length = arr.length;
-  var tmp = Array(arr.length);
-  var i;
+export function stableSort(arr, compareFnc) {
+  const length = arr.length;
+  const tmp = Array(arr.length);
+  let i;
   for (i = 0; i < length; i++) {
     tmp[i] = {index: i, value: arr[i]};
   }
@@ -232,37 +213,37 @@ ol.array.stableSort = function(arr, compareFnc) {
   for (i = 0; i < arr.length; i++) {
     arr[i] = tmp[i].value;
   }
-};
+}
 
 
 /**
- * @param {Array.<*>} arr The array to search in.
+ * @param {Array<*>} arr The array to search in.
  * @param {Function} func Comparison function.
  * @return {number} Return index.
  */
-ol.array.findIndex = function(arr, func) {
-  var index;
-  var found = !arr.every(function(el, idx) {
+export function findIndex(arr, func) {
+  let index;
+  const found = !arr.every(function(el, idx) {
     index = idx;
     return !func(el, idx, arr);
   });
   return found ? index : -1;
-};
+}
 
 
 /**
- * @param {Array.<*>} arr The array to test.
+ * @param {Array<*>} arr The array to test.
  * @param {Function=} opt_func Comparison function.
  * @param {boolean=} opt_strict Strictly sorted (default false).
  * @return {boolean} Return index.
  */
-ol.array.isSorted = function(arr, opt_func, opt_strict) {
-  var compare = opt_func || ol.array.numberSafeCompareFunction;
+export function isSorted(arr, opt_func, opt_strict) {
+  const compare = opt_func || numberSafeCompareFunction;
   return arr.every(function(currentVal, index) {
     if (index === 0) {
       return true;
     }
-    var res = compare(arr[index - 1], currentVal);
+    const res = compare(arr[index - 1], currentVal);
     return !(res > 0 || opt_strict && res === 0);
   });
-};
+}

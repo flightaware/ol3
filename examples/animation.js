@@ -1,15 +1,37 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.animation');
-goog.require('ol.control');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {easeIn, easeOut} from '../src/ol/easing.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import OSM from '../src/ol/source/OSM.js';
 
+const london = fromLonLat([-0.12755, 51.507222]);
+const moscow = fromLonLat([37.6178, 55.7517]);
+const istanbul = fromLonLat([28.9744, 41.0128]);
+const rome = fromLonLat([12.5, 41.9]);
+const bern = fromLonLat([7.4458, 46.95]);
 
-// from https://github.com/DmitryBaranovskiy/raphael
+const view = new View({
+  center: istanbul,
+  zoom: 6
+});
+
+const map = new Map({
+  target: 'map',
+  layers: [
+    new TileLayer({
+      preload: 4,
+      source: new OSM()
+    })
+  ],
+  view: view
+});
+
+// A bounce easing method (from https://github.com/DmitryBaranovskiy/raphael).
 function bounce(t) {
-  var s = 7.5625, p = 2.75, l;
+  const s = 7.5625;
+  const p = 2.75;
+  let l;
   if (t < (1 / p)) {
     l = s * t * t;
   } else {
@@ -29,159 +51,132 @@ function bounce(t) {
   return l;
 }
 
-// from https://github.com/DmitryBaranovskiy/raphael
+// An elastic easing method (from https://github.com/DmitryBaranovskiy/raphael).
 function elastic(t) {
   return Math.pow(2, -10 * t) * Math.sin((t - 0.075) * (2 * Math.PI) / 0.3) + 1;
 }
 
-var london = ol.proj.fromLonLat([-0.12755, 51.507222]);
-var moscow = ol.proj.fromLonLat([37.6178, 55.7517]);
-var istanbul = ol.proj.fromLonLat([28.9744, 41.0128]);
-var rome = ol.proj.fromLonLat([12.5, 41.9]);
-var bern = ol.proj.fromLonLat([7.4458, 46.95]);
-var madrid = ol.proj.fromLonLat([-3.683333, 40.4]);
+function onClick(id, callback) {
+  document.getElementById(id).addEventListener('click', callback);
+}
 
-var view = new ol.View({
-  // the view's initial state
-  center: istanbul,
-  zoom: 6
+onClick('rotate-left', function() {
+  view.animate({
+    rotation: view.getRotation() + Math.PI / 2
+  });
 });
 
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      preload: 4,
-      source: new ol.source.OSM()
-    })
-  ],
-  // Improve user experience by loading tiles while animating. Will make
-  // animations stutter on mobile or slow devices.
-  loadTilesWhileAnimating: true,
-  target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: view
+onClick('rotate-right', function() {
+  view.animate({
+    rotation: view.getRotation() - Math.PI / 2
+  });
 });
 
-var rotateLeft = document.getElementById('rotate-left');
-rotateLeft.addEventListener('click', function() {
-  var rotateLeft = ol.animation.rotate({
-    duration: 2000,
-    rotation: -4 * Math.PI
-  });
-  map.beforeRender(rotateLeft);
-}, false);
-var rotateRight = document.getElementById('rotate-right');
-rotateRight.addEventListener('click', function() {
-  var rotateRight = ol.animation.rotate({
-    duration: 2000,
-    rotation: 4 * Math.PI
-  });
-  map.beforeRender(rotateRight);
-}, false);
-
-var rotateAroundRome = document.getElementById('rotate-around-rome');
-rotateAroundRome.addEventListener('click', function() {
-  var currentRotation = view.getRotation();
-  var rotateAroundRome = ol.animation.rotate({
+onClick('rotate-around-rome', function() {
+  // Rotation animation takes the shortest arc, so animate in two parts
+  const rotation = view.getRotation();
+  view.animate({
+    rotation: rotation + Math.PI,
     anchor: rome,
-    duration: 1000,
-    rotation: currentRotation
+    easing: easeIn
+  }, {
+    rotation: rotation + 2 * Math.PI,
+    anchor: rome,
+    easing: easeOut
   });
-  map.beforeRender(rotateAroundRome);
-  view.rotate(currentRotation + (Math.PI / 2), rome);
-}, false);
+});
 
-var panToLondon = document.getElementById('pan-to-london');
-panToLondon.addEventListener('click', function() {
-  var pan = ol.animation.pan({
+onClick('pan-to-london', function() {
+  view.animate({
+    center: london,
+    duration: 2000
+  });
+});
+
+onClick('elastic-to-moscow', function() {
+  view.animate({
+    center: moscow,
     duration: 2000,
-    source: /** @type {ol.Coordinate} */ (view.getCenter())
+    easing: elastic
   });
-  map.beforeRender(pan);
-  view.setCenter(london);
-}, false);
+});
 
-var elasticToMoscow = document.getElementById('elastic-to-moscow');
-elasticToMoscow.addEventListener('click', function() {
-  var pan = ol.animation.pan({
+onClick('bounce-to-istanbul', function() {
+  view.animate({
+    center: istanbul,
     duration: 2000,
-    easing: elastic,
-    source: /** @type {ol.Coordinate} */ (view.getCenter())
+    easing: bounce
   });
-  map.beforeRender(pan);
-  view.setCenter(moscow);
-}, false);
+});
 
-var bounceToIstanbul = document.getElementById('bounce-to-istanbul');
-bounceToIstanbul.addEventListener('click', function() {
-  var pan = ol.animation.pan({
-    duration: 2000,
-    easing: bounce,
-    source: /** @type {ol.Coordinate} */ (view.getCenter())
-  });
-  map.beforeRender(pan);
-  view.setCenter(istanbul);
-}, false);
-
-var spinToRome = document.getElementById('spin-to-rome');
-spinToRome.addEventListener('click', function() {
-  var duration = 2000;
-  var start = +new Date();
-  var pan = ol.animation.pan({
-    duration: duration,
-    source: /** @type {ol.Coordinate} */ (view.getCenter()),
-    start: start
-  });
-  var rotate = ol.animation.rotate({
-    duration: duration,
+onClick('spin-to-rome', function() {
+  // Rotation animation takes the shortest arc, so animate in two parts
+  const center = view.getCenter();
+  view.animate({
+    center: [
+      center[0] + (rome[0] - center[0]) / 2,
+      center[1] + (rome[1] - center[1]) / 2
+    ],
+    rotation: Math.PI,
+    easing: easeIn
+  }, {
+    center: rome,
     rotation: 2 * Math.PI,
-    start: start
+    easing: easeOut
   });
-  map.beforeRender(pan, rotate);
-  view.setCenter(rome);
-}, false);
+});
 
-var flyToBern = document.getElementById('fly-to-bern');
-flyToBern.addEventListener('click', function() {
-  var duration = 2000;
-  var start = +new Date();
-  var pan = ol.animation.pan({
-    duration: duration,
-    source: /** @type {ol.Coordinate} */ (view.getCenter()),
-    start: start
-  });
-  var bounce = ol.animation.bounce({
-    duration: duration,
-    resolution: 4 * view.getResolution(),
-    start: start
-  });
-  map.beforeRender(pan, bounce);
-  view.setCenter(bern);
-}, false);
+function flyTo(location, done) {
+  const duration = 2000;
+  const zoom = view.getZoom();
+  let parts = 2;
+  let called = false;
+  function callback(complete) {
+    --parts;
+    if (called) {
+      return;
+    }
+    if (parts === 0 || !complete) {
+      called = true;
+      done(complete);
+    }
+  }
+  view.animate({
+    center: location,
+    duration: duration
+  }, callback);
+  view.animate({
+    zoom: zoom - 1,
+    duration: duration / 2
+  }, {
+    zoom: zoom,
+    duration: duration / 2
+  }, callback);
+}
 
-var spiralToMadrid = document.getElementById('spiral-to-madrid');
-spiralToMadrid.addEventListener('click', function() {
-  var duration = 2000;
-  var start = +new Date();
-  var pan = ol.animation.pan({
-    duration: duration,
-    source: /** @type {ol.Coordinate} */ (view.getCenter()),
-    start: start
-  });
-  var bounce = ol.animation.bounce({
-    duration: duration,
-    resolution: 2 * view.getResolution(),
-    start: start
-  });
-  var rotate = ol.animation.rotate({
-    duration: duration,
-    rotation: -4 * Math.PI,
-    start: start
-  });
-  map.beforeRender(pan, bounce, rotate);
-  view.setCenter(madrid);
-}, false);
+onClick('fly-to-bern', function() {
+  flyTo(bern, function() {});
+});
+
+function tour() {
+  const locations = [london, bern, rome, moscow, istanbul];
+  let index = -1;
+  function next(more) {
+    if (more) {
+      ++index;
+      if (index < locations.length) {
+        const delay = index === 0 ? 0 : 750;
+        setTimeout(function() {
+          flyTo(locations[index], next);
+        }, delay);
+      } else {
+        alert('Tour complete');
+      }
+    } else {
+      alert('Tour cancelled');
+    }
+  }
+  next(true);
+}
+
+onClick('tour', tour);

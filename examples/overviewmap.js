@@ -1,21 +1,29 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.control.OverviewMap');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {defaults as defaultControls, OverviewMap} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
-var map = new ol.Map({
-  controls: ol.control.defaults().extend([
-    new ol.control.OverviewMap()
+const source = new OSM();
+const overviewMapControl = new OverviewMap({
+  layers: [
+    new TileLayer({
+      source: source
+    })
+  ]
+});
+
+const map = new Map({
+  controls: defaultControls().extend([
+    overviewMapControl
   ]),
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: source
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [500000, 6000000],
     zoom: 7
   })

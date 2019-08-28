@@ -1,25 +1,19 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.extent');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {getBottomLeft, getTopRight} from '../src/ol/extent.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {toLonLat} from '../src/ol/proj.js';
+import OSM from '../src/ol/source/OSM.js';
 
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
@@ -30,17 +24,15 @@ function display(id, value) {
 }
 
 function wrapLon(value) {
-  var worlds = Math.floor((value + 180) / 360);
+  const worlds = Math.floor((value + 180) / 360);
   return value - (worlds * 360);
 }
 
 function onMoveEnd(evt) {
-  var map = evt.map;
-  var extent = map.getView().calculateExtent(map.getSize());
-  var bottomLeft = ol.proj.transform(ol.extent.getBottomLeft(extent),
-      'EPSG:3857', 'EPSG:4326');
-  var topRight = ol.proj.transform(ol.extent.getTopRight(extent),
-      'EPSG:3857', 'EPSG:4326');
+  const map = evt.map;
+  const extent = map.getView().calculateExtent(map.getSize());
+  const bottomLeft = toLonLat(getBottomLeft(extent));
+  const topRight = toLonLat(getTopRight(extent));
   display('left', wrapLon(bottomLeft[0]));
   display('bottom', bottomLeft[1]);
   display('right', wrapLon(topRight[0]));

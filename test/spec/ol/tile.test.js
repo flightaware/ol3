@@ -1,36 +1,87 @@
-goog.provide('ol.test.Tile');
+import {getUid} from '../../../src/ol/util.js';
+import ImageTile from '../../../src/ol/ImageTile.js';
+import Tile from '../../../src/ol/Tile.js';
+import TileState from '../../../src/ol/TileState.js';
 
-goog.require('ol.Tile');
 
 describe('ol.Tile', function() {
-  describe('interimChain', function() {
-    var head, renderTile;
-    beforeEach(function() {
-      var tileCoord = [0, 0, 0];
-      head = new ol.ImageTile(tileCoord, ol.Tile.State.IDLE);
-      ol.getUid(head);
+  describe('constructor', function() {
+    it('sets a default transition', function() {
+      const coord = [0, 0, 0];
+      const tile = new Tile(coord, TileState.IDLE);
+      expect(tile.transition_).to.equal(250);
+    });
 
-      var addToChain = function(tile, state) {
-        var next = new ol.ImageTile(tileCoord, state);
-        ol.getUid(next);
+    it('allows the transition to be set', function() {
+      const coord = [0, 0, 0];
+      const transition = 500;
+      const tile = new Tile(coord, TileState.IDLE, {transition: transition});
+      expect(tile.transition_).to.equal(transition);
+    });
+  });
+
+  describe('#getAlpha()', function() {
+    it('returns the alpha value for a tile in transition', function() {
+      const coord = [0, 0, 0];
+      const tile = new Tile(coord, TileState.IDLE);
+      const id = 'test';
+      let time = Date.now();
+
+      const startAlpha = tile.getAlpha(id, time);
+      expect(startAlpha > 0).to.be(true);
+      expect(startAlpha < 1).to.be(true);
+
+      time += tile.transition_ / 2;
+      const midAlpha = tile.getAlpha(id, time);
+      expect(midAlpha > startAlpha).to.be(true);
+      expect(midAlpha < 1).to.be(true);
+
+      time += tile.transition_ / 2;
+      const endAlpha = tile.getAlpha(id, time);
+      expect(endAlpha).to.be(1);
+    });
+  });
+
+  describe('#inTransition()', function() {
+    it('determines if the tile is in transition', function() {
+      const coord = [0, 0, 0];
+      const tile = new Tile(coord, TileState.IDLE);
+      const id = 'test';
+
+      expect(tile.inTransition(id)).to.be(true);
+      tile.endTransition(id);
+      expect(tile.inTransition(id)).to.be(false);
+    });
+  });
+
+  describe('interimChain', function() {
+    let head, renderTile;
+    beforeEach(function() {
+      const tileCoord = [0, 0, 0];
+      head = new ImageTile(tileCoord, TileState.IDLE);
+      getUid(head);
+
+      const addToChain = function(tile, state) {
+        const next = new ImageTile(tileCoord, state);
+        getUid(next);
         tile.interimTile = next;
         return next;
       };
-      var tail = addToChain(head,ol.Tile.State.IDLE); //discard, deprecated by head
-      tail = addToChain(tail,ol.Tile.State.LOADING); //keep, request already going
-      tail = addToChain(tail,ol.Tile.State.IDLE); //discard, deprecated by head
-      tail = addToChain(tail,ol.Tile.State.LOADED); //keep, use for rendering
+      let tail = addToChain(head, TileState.IDLE); //discard, deprecated by head
+      tail = addToChain(tail, TileState.LOADING); //keep, request already going
+      tail = addToChain(tail, TileState.IDLE); //discard, deprecated by head
+      tail = addToChain(tail, TileState.LOADED); //keep, use for rendering
       renderTile = tail; //store this tile for later tests
-      tail = addToChain(tail,ol.Tile.State.IDLE);  //rest of list outdated by tile above
-      tail = addToChain(tail,ol.Tile.State.LOADED);
-      tail = addToChain(tail,ol.Tile.State.LOADING);
-      tail = addToChain(tail,ol.Tile.State.LOADED);
+      tail = addToChain(tail, TileState.IDLE); //rest of list outdated by tile above
+      tail = addToChain(tail, TileState.LOADED);
+      tail = addToChain(tail, TileState.LOADING);
+      tail = addToChain(tail, TileState.LOADED);
 
     });
 
     it('shrinks tile chain correctly', function(done) {
-      var chainLength = function(tile) {
-        var c = 0;
+      const chainLength = function(tile) {
+        let c = 0;
         while (tile) {
           ++c;
           tile = tile.interimTile;
@@ -61,7 +112,7 @@ describe('ol.Tile', function() {
       head.refreshInterimChain();
       while (head.interimTile !== null) {
         //use property of ol.getUid returning increasing id's.
-        expect(ol.getUid(head) < ol.getUid(head.interimTile));
+        expect(getUid(head) < getUid(head.interimTile));
         head = head.interimTile;
       }
       done();

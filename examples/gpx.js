@@ -1,76 +1,72 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.GPX');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import GPX from '../src/ol/format/GPX.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
+const raster = new TileLayer({
+  source: new BingMaps({
     imagerySet: 'Aerial',
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
   })
 });
 
-var style = {
-  'Point': new ol.style.Style({
-    image: new ol.style.Circle({
-      fill: new ol.style.Fill({
+const style = {
+  'Point': new Style({
+    image: new CircleStyle({
+      fill: new Fill({
         color: 'rgba(255,255,0,0.4)'
       }),
       radius: 5,
-      stroke: new ol.style.Stroke({
+      stroke: new Stroke({
         color: '#ff0',
         width: 1
       })
     })
   }),
-  'LineString': new ol.style.Style({
-    stroke: new ol.style.Stroke({
+  'LineString': new Style({
+    stroke: new Stroke({
       color: '#f00',
       width: 3
     })
   }),
-  'MultiLineString': new ol.style.Style({
-    stroke: new ol.style.Stroke({
+  'MultiLineString': new Style({
+    stroke: new Stroke({
       color: '#0f0',
       width: 3
     })
   })
 };
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vector = new VectorLayer({
+  source: new VectorSource({
     url: 'data/gpx/fells_loop.gpx',
-    format: new ol.format.GPX()
+    format: new GPX()
   }),
   style: function(feature) {
     return style[feature.getGeometry().getType()];
   }
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [-7916041.528716288, 5228379.045749711],
     zoom: 12
   })
 });
 
-var displayFeatureInfo = function(pixel) {
-  var features = [];
+const displayFeatureInfo = function(pixel) {
+  const features = [];
   map.forEachFeatureAtPixel(pixel, function(feature) {
     features.push(feature);
   });
   if (features.length > 0) {
-    var info = [];
-    var i, ii;
+    const info = [];
+    let i, ii;
     for (i = 0, ii = features.length; i < ii; ++i) {
       info.push(features[i].get('desc'));
     }
@@ -86,7 +82,7 @@ map.on('pointermove', function(evt) {
   if (evt.dragging) {
     return;
   }
-  var pixel = map.getEventPixel(evt.originalEvent);
+  const pixel = map.getEventPixel(evt.originalEvent);
   displayFeatureInfo(pixel);
 });
 

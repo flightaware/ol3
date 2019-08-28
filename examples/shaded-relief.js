@@ -1,37 +1,33 @@
-// NOCOMPILE
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Image');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Raster');
-goog.require('ol.source.XYZ');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {Image as ImageLayer, Tile as TileLayer} from '../src/ol/layer.js';
+import {OSM, Raster, XYZ} from '../src/ol/source.js';
 
 
 /**
  * Generates a shaded relief image given elevation data.  Uses a 3x3
  * neighborhood for determining slope and aspect.
- * @param {Array.<ImageData>} inputs Array of input images.
+ * @param {Array<ImageData>} inputs Array of input images.
  * @param {Object} data Data added in the "beforeoperations" event.
  * @return {ImageData} Output image.
  */
 function shade(inputs, data) {
-  var elevationImage = inputs[0];
-  var width = elevationImage.width;
-  var height = elevationImage.height;
-  var elevationData = elevationImage.data;
-  var shadeData = new Uint8ClampedArray(elevationData.length);
-  var dp = data.resolution * 2;
-  var maxX = width - 1;
-  var maxY = height - 1;
-  var pixel = [0, 0, 0, 0];
-  var twoPi = 2 * Math.PI;
-  var halfPi = Math.PI / 2;
-  var sunEl = Math.PI * data.sunEl / 180;
-  var sunAz = Math.PI * data.sunAz / 180;
-  var cosSunEl = Math.cos(sunEl);
-  var sinSunEl = Math.sin(sunEl);
-  var pixelX, pixelY, x0, x1, y0, y1, offset,
+  const elevationImage = inputs[0];
+  const width = elevationImage.width;
+  const height = elevationImage.height;
+  const elevationData = elevationImage.data;
+  const shadeData = new Uint8ClampedArray(elevationData.length);
+  const dp = data.resolution * 2;
+  const maxX = width - 1;
+  const maxY = height - 1;
+  const pixel = [0, 0, 0, 0];
+  const twoPi = 2 * Math.PI;
+  const halfPi = Math.PI / 2;
+  const sunEl = Math.PI * data.sunEl / 180;
+  const sunAz = Math.PI * data.sunAz / 180;
+  const cosSunEl = Math.cos(sunEl);
+  const sinSunEl = Math.sin(sunEl);
+  let pixelX, pixelY, x0, x1, y0, y1, offset,
       z0, z1, dzdx, dzdy, slope, aspect, cosIncidence, scaled;
   for (pixelY = 0; pixelY <= maxY; ++pixelY) {
     y0 = pixelY === 0 ? 0 : pixelY - 1;
@@ -102,29 +98,29 @@ function shade(inputs, data) {
   return {data: shadeData, width: width, height: height};
 }
 
-var elevation = new ol.source.XYZ({
+const elevation = new XYZ({
   url: 'https://{a-d}.tiles.mapbox.com/v3/aj.sf-dem/{z}/{x}/{y}.png',
   crossOrigin: 'anonymous'
 });
 
-var raster = new ol.source.Raster({
+const raster = new Raster({
   sources: [elevation],
   operationType: 'image',
   operation: shade
 });
 
-var map = new ol.Map({
+const map = new Map({
   target: 'map',
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     }),
-    new ol.layer.Image({
+    new ImageLayer({
       opacity: 0.3,
       source: raster
     })
   ],
-  view: new ol.View({
+  view: new View({
     extent: [-13675026, 4439648, -13580856, 4580292],
     center: [-13615645, 4497969],
     minZoom: 10,
@@ -133,11 +129,11 @@ var map = new ol.Map({
   })
 });
 
-var controlIds = ['vert', 'sunEl', 'sunAz'];
-var controls = {};
+const controlIds = ['vert', 'sunEl', 'sunAz'];
+const controls = {};
 controlIds.forEach(function(id) {
-  var control = document.getElementById(id);
-  var output = document.getElementById(id + 'Out');
+  const control = document.getElementById(id);
+  const output = document.getElementById(id + 'Out');
   control.addEventListener('input', function() {
     output.innerText = control.value;
     raster.changed();
@@ -148,9 +144,9 @@ controlIds.forEach(function(id) {
 
 raster.on('beforeoperations', function(event) {
   // the event.data object will be passed to operations
-  var data = event.data;
+  const data = event.data;
   data.resolution = event.resolution;
-  for (var id in controls) {
+  for (const id in controls) {
     data[id] = Number(controls[id].value);
   }
 });

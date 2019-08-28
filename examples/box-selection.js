@@ -1,73 +1,70 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.events.condition');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.interaction.DragBox');
-goog.require('ol.interaction.Select');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {platformModifierKeyOnly} from '../src/ol/events/condition.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import {DragBox, Select} from '../src/ol/interaction.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
 
 
-var vectorSource = new ol.source.Vector({
+const vectorSource = new VectorSource({
   url: 'data/geojson/countries.geojson',
-  format: new ol.format.GeoJSON()
+  format: new GeoJSON()
 });
 
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     }),
-    new ol.layer.Vector({
+    new VectorLayer({
       source: vectorSource
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
 // a normal select interaction to handle click
-var select = new ol.interaction.Select();
+const select = new Select();
 map.addInteraction(select);
 
-var selectedFeatures = select.getFeatures();
+const selectedFeatures = select.getFeatures();
 
 // a DragBox interaction used to select features by drawing boxes
-var dragBox = new ol.interaction.DragBox({
-  condition: ol.events.condition.platformModifierKeyOnly
+const dragBox = new DragBox({
+  condition: platformModifierKeyOnly
 });
 
 map.addInteraction(dragBox);
 
-var infoBox = document.getElementById('info');
-
 dragBox.on('boxend', function() {
   // features that intersect the box are added to the collection of
-  // selected features, and their names are displayed in the "info"
-  // div
-  var info = [];
-  var extent = dragBox.getGeometry().getExtent();
+  // selected features
+  const extent = dragBox.getGeometry().getExtent();
   vectorSource.forEachFeatureIntersectingExtent(extent, function(feature) {
     selectedFeatures.push(feature);
-    info.push(feature.get('name'));
   });
-  if (info.length > 0) {
-    infoBox.innerHTML = info.join(', ');
-  }
 });
 
 // clear selection when drawing a new box and when clicking on the map
 dragBox.on('boxstart', function() {
   selectedFeatures.clear();
-  infoBox.innerHTML = '&nbsp;';
 });
-map.on('click', function() {
-  selectedFeatures.clear();
-  infoBox.innerHTML = '&nbsp;';
+
+const infoBox = document.getElementById('info');
+
+selectedFeatures.on(['add', 'remove'], function() {
+  const names = selectedFeatures.getArray().map(function(feature) {
+    return feature.get('name');
+  });
+  if (names.length > 0) {
+    infoBox.innerHTML = names.join(', ');
+  } else {
+    infoBox.innerHTML = 'No countries selected';
+  }
 });

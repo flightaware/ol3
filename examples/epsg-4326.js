@@ -1,31 +1,31 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.control.ScaleLine');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.TileWMS');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {defaults as defaultControls, ScaleLine} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import TileWMS from '../src/ol/source/TileWMS.js';
 
 
-var layers = [
-  new ol.layer.Tile({
-    source: new ol.source.TileWMS({
-      url: 'http://demo.boundlessgeo.com/geoserver/wms',
+const layers = [
+  new TileLayer({
+    source: new TileWMS({
+      url: 'https://ahocevar.com/geoserver/wms',
       params: {
-        'LAYERS': 'ne:NE1_HR_LC_SR_W_DR'
+        'LAYERS': 'ne:NE1_HR_LC_SR_W_DR',
+        'TILED': true
       }
     })
   })
 ];
 
-var map = new ol.Map({
-  controls: ol.control.defaults().extend([
-    new ol.control.ScaleLine({
+const map = new Map({
+  controls: defaultControls().extend([
+    new ScaleLine({
       units: 'degrees'
     })
   ]),
   layers: layers,
   target: 'map',
-  view: new ol.View({
+  view: new View({
     projection: 'EPSG:4326',
     center: [0, 0],
     zoom: 2

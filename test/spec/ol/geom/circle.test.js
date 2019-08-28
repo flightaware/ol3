@@ -1,22 +1,20 @@
-goog.provide('ol.test.geom.Circle');
-
-goog.require('ol.geom.Circle');
+import Circle from '../../../../src/ol/geom/Circle.js';
 
 
 describe('ol.geom.Circle', function() {
 
   describe('with a unit circle', function() {
 
-    var circle;
+    let circle;
     beforeEach(function() {
-      circle = new ol.geom.Circle([0, 0], 1);
+      circle = new Circle([0, 0], 1);
     });
 
     describe('#clone', function() {
 
       it('returns a clone', function() {
-        var clone = circle.clone();
-        expect(clone).to.be.an(ol.geom.Circle);
+        const clone = circle.clone();
+        expect(clone).to.be.an(Circle);
         expect(clone.getCenter()).to.eql(circle.getCenter());
         expect(clone.getCenter()).not.to.be(circle.getCenter());
         expect(clone.getRadius()).to.be(circle.getRadius());
@@ -64,7 +62,7 @@ describe('ol.geom.Circle', function() {
     describe('#getClosestPoint', function() {
 
       it('returns the closest point on the perimeter', function() {
-        var closestPoint;
+        let closestPoint;
         closestPoint = circle.getClosestPoint([2, 0]);
         expect(closestPoint[0]).to.roughlyEqual(1, 1e-15);
         expect(closestPoint[1]).to.roughlyEqual(0, 1e-15);
@@ -92,9 +90,9 @@ describe('ol.geom.Circle', function() {
       });
 
       it('maintains Z coordinates', function() {
-        var circle = new ol.geom.Circle([0, 0, 1], 1);
+        const circle = new Circle([0, 0, 1], 1);
         expect(circle.getLayout()).to.be('XYZ');
-        var closestPoint = circle.getClosestPoint([2, 0]);
+        const closestPoint = circle.getClosestPoint([2, 0]);
         expect(closestPoint).to.have.length(3);
         expect(closestPoint[0]).to.roughlyEqual(1, 1e-15);
         expect(closestPoint[1]).to.roughlyEqual(0, 1e-15);
@@ -102,9 +100,9 @@ describe('ol.geom.Circle', function() {
       });
 
       it('maintains M coordinates', function() {
-        var circle = new ol.geom.Circle([0, 0, 2], 1,
-            'XYM');
-        var closestPoint = circle.getClosestPoint([2, 0]);
+        const circle = new Circle([0, 0, 2], 1,
+          'XYM');
+        const closestPoint = circle.getClosestPoint([2, 0]);
         expect(closestPoint).to.have.length(3);
         expect(closestPoint[0]).to.roughlyEqual(1, 1e-15);
         expect(closestPoint[1]).to.roughlyEqual(0, 1e-15);
@@ -112,9 +110,9 @@ describe('ol.geom.Circle', function() {
       });
 
       it('maintains Z and M coordinates', function() {
-        var circle = new ol.geom.Circle([0, 0, 1, 2], 1);
+        const circle = new Circle([0, 0, 1, 2], 1);
         expect(circle.getLayout()).to.be('XYZM');
-        var closestPoint = circle.getClosestPoint([2, 0]);
+        const closestPoint = circle.getClosestPoint([2, 0]);
         expect(closestPoint).to.have.length(4);
         expect(closestPoint[0]).to.roughlyEqual(1, 1e-15);
         expect(closestPoint[1]).to.roughlyEqual(0, 1e-15);
@@ -164,7 +162,7 @@ describe('ol.geom.Circle', function() {
       });
 
       it('fires a change event', function() {
-        var spy = sinon.spy();
+        const spy = sinon.spy();
         circle.on('change', spy);
         circle.setCenter([1, 2]);
         expect(spy.calledOnce).to.be(true);
@@ -180,13 +178,6 @@ describe('ol.geom.Circle', function() {
         expect(circle.getRadius()).to.be(3);
       });
 
-      it('fires a single change event', function() {
-        var spy = sinon.spy();
-        circle.on('change', spy);
-        circle.setFlatCoordinates('XY', [1, 2, 4, 2]);
-        expect(spy.calledOnce).to.be(true);
-      });
-
     });
 
     describe('#setRadius', function() {
@@ -197,7 +188,7 @@ describe('ol.geom.Circle', function() {
       });
 
       it('fires a change event', function() {
-        var spy = sinon.spy();
+        const spy = sinon.spy();
         circle.on('change', spy);
         circle.setRadius(2);
         expect(spy.calledOnce).to.be(true);
@@ -208,36 +199,36 @@ describe('ol.geom.Circle', function() {
     describe('#intersectsExtent', function() {
 
       it('returns false for non-intersecting extents (wide outside own bbox)',
-         function() {
-           var wideOutsideLeftTop = [-3, 2, -2, 3];
-           var wideOutsideRightTop = [2, 2, 3, 3];
-           var wideOutsideRightBottom = [2, -3, 3, -2];
-           var wideOutsideLeftBottom = [-3, -3, -2, -2];
-           expect(circle.intersectsExtent(wideOutsideLeftTop)).to.be(false);
-           expect(circle.intersectsExtent(wideOutsideRightTop)).to.be(false);
-           expect(circle.intersectsExtent(wideOutsideRightBottom)).to.be(false);
-           expect(circle.intersectsExtent(wideOutsideLeftBottom)).to.be(false);
-         }
+        function() {
+          const wideOutsideLeftTop = [-3, 2, -2, 3];
+          const wideOutsideRightTop = [2, 2, 3, 3];
+          const wideOutsideRightBottom = [2, -3, 3, -2];
+          const wideOutsideLeftBottom = [-3, -3, -2, -2];
+          expect(circle.intersectsExtent(wideOutsideLeftTop)).to.be(false);
+          expect(circle.intersectsExtent(wideOutsideRightTop)).to.be(false);
+          expect(circle.intersectsExtent(wideOutsideRightBottom)).to.be(false);
+          expect(circle.intersectsExtent(wideOutsideLeftBottom)).to.be(false);
+        }
       );
 
       it('returns false for non-intersecting extents (inside own bbox)',
-         function() {
-           var nearOutsideLeftTop = [-1, 0.9, -0.9, 1];
-           var nearOutsideRightTop = [0.9, 0.9, 1, 1];
-           var nearOutsideRightBottom = [0.9, -1, 1, -0.9];
-           var nearOutsideLeftBottom = [-1, -1, -0.9, -0.9];
-           expect(circle.intersectsExtent(nearOutsideLeftTop)).to.be(false);
-           expect(circle.intersectsExtent(nearOutsideRightTop)).to.be(false);
-           expect(circle.intersectsExtent(nearOutsideRightBottom)).to.be(false);
-           expect(circle.intersectsExtent(nearOutsideLeftBottom)).to.be(false);
-         }
+        function() {
+          const nearOutsideLeftTop = [-1, 0.9, -0.9, 1];
+          const nearOutsideRightTop = [0.9, 0.9, 1, 1];
+          const nearOutsideRightBottom = [0.9, -1, 1, -0.9];
+          const nearOutsideLeftBottom = [-1, -1, -0.9, -0.9];
+          expect(circle.intersectsExtent(nearOutsideLeftTop)).to.be(false);
+          expect(circle.intersectsExtent(nearOutsideRightTop)).to.be(false);
+          expect(circle.intersectsExtent(nearOutsideRightBottom)).to.be(false);
+          expect(circle.intersectsExtent(nearOutsideLeftBottom)).to.be(false);
+        }
       );
 
       it('returns true for extents that intersect clearly', function() {
-        var intersectingLeftTop = [-1.5, 0.5, -0.5, 1.5];
-        var intersectingRightTop = [0.5, 0.5, 1.5, 1.5];
-        var intersectingRightBottom = [0.5, -1.5, 1.5, -0.5];
-        var intersectingLeftBottom = [-1.5, -1.5, -0.5, -0.5];
+        const intersectingLeftTop = [-1.5, 0.5, -0.5, 1.5];
+        const intersectingRightTop = [0.5, 0.5, 1.5, 1.5];
+        const intersectingRightBottom = [0.5, -1.5, 1.5, -0.5];
+        const intersectingLeftBottom = [-1.5, -1.5, -0.5, -0.5];
         expect(circle.intersectsExtent(intersectingLeftTop)).to.be(true);
         expect(circle.intersectsExtent(intersectingRightTop)).to.be(true);
         expect(circle.intersectsExtent(intersectingRightBottom)).to.be(true);
@@ -245,10 +236,10 @@ describe('ol.geom.Circle', function() {
       });
 
       it('returns true for extents that touch the circumference', function() {
-        var touchCircumferenceLeft = [-2, 0, -1, 1];
-        var touchCircumferenceTop = [0, 1, 1, 2];
-        var touchCircumferenceRight = [1, -1, 2, 0];
-        var touchCircumferenceBottom = [-1, -2, 0, -1];
+        const touchCircumferenceLeft = [-2, 0, -1, 1];
+        const touchCircumferenceTop = [0, 1, 1, 2];
+        const touchCircumferenceRight = [1, -1, 2, 0];
+        const touchCircumferenceBottom = [-1, -2, 0, -1];
         expect(circle.intersectsExtent(touchCircumferenceLeft)).to.be(true);
         expect(circle.intersectsExtent(touchCircumferenceTop)).to.be(true);
         expect(circle.intersectsExtent(touchCircumferenceRight)).to.be(true);
@@ -256,22 +247,50 @@ describe('ol.geom.Circle', function() {
       });
 
       it('returns true for a contained extent', function() {
-        var containedExtent = [-0.5, -0.5, 0.5, 0.5];
+        const containedExtent = [-0.5, -0.5, 0.5, 0.5];
         expect(circle.intersectsExtent(containedExtent)).to.be(true);
       });
 
       it('returns true for a covering extent', function() {
-        var bigCoveringExtent = [-5, -5, 5, 5];
+        const bigCoveringExtent = [-5, -5, 5, 5];
         expect(circle.intersectsExtent(bigCoveringExtent)).to.be(true);
       });
 
       it('returns true for the geom\'s own extent', function() {
-        var circleExtent = circle.getExtent();
+        const circleExtent = circle.getExtent();
         expect(circle.intersectsExtent(circleExtent)).to.be(true);
       });
 
     });
 
+    describe('#rotate', function() {
+
+      it('rotates the center around the anchor', function() {
+        circle.setCenter([1, 0]);
+        circle.rotate(Math.PI / 2, [2, 0]);
+        expect(circle.getCenter()).to.eql([2, -1]);
+        expect(circle.getExtent()).to.eql([1, -2, 3, 0]);
+      });
+
+      it('does not change if the anchor equals the center', function() {
+        const center = [1, 0];
+        circle.setCenter(center);
+        const extent = circle.getExtent();
+        circle.rotate(Math.PI / 2, center);
+        expect(circle.getCenter()).to.eql(center);
+        expect(circle.getExtent()).to.eql(extent);
+      });
+    });
+
+    describe('#translate', function() {
+
+      it('translates the circle', function() {
+        circle.setCenter([1, 1]);
+        circle.translate(5, 10);
+        expect(circle.getCenter()).to.eql([6, 11]);
+        expect(circle.getExtent()).to.eql([5, 10, 7, 12]);
+      });
+    });
   });
 
 });

@@ -1,18 +1,17 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
 // default zoom, center and rotation
-var zoom = 2;
-var center = [0, 0];
-var rotation = 0;
+let zoom = 2;
+let center = [0, 0];
+let rotation = 0;
 
 if (window.location.hash !== '') {
   // try to restore center, zoom-level and rotation from the URL
-  var hash = window.location.hash.replace('#map=', '');
-  var parts = hash.split('/');
+  const hash = window.location.hash.replace('#map=', '');
+  const parts = hash.split('/');
   if (parts.length === 4) {
     zoom = parseInt(parts[0], 10);
     center = [
@@ -23,41 +22,36 @@ if (window.location.hash !== '') {
   }
 }
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: center,
     zoom: zoom,
     rotation: rotation
   })
 });
 
-var shouldUpdate = true;
-var view = map.getView();
-var updatePermalink = function() {
+let shouldUpdate = true;
+const view = map.getView();
+const updatePermalink = function() {
   if (!shouldUpdate) {
     // do not update the URL when the view was changed in the 'popstate' handler
     shouldUpdate = true;
     return;
   }
 
-  var center = view.getCenter();
-  var hash = '#map=' +
+  const center = view.getCenter();
+  const hash = '#map=' +
       view.getZoom() + '/' +
       Math.round(center[0] * 100) / 100 + '/' +
       Math.round(center[1] * 100) / 100 + '/' +
       view.getRotation();
-  var state = {
+  const state = {
     zoom: view.getZoom(),
     center: view.getCenter(),
     rotation: view.getRotation()

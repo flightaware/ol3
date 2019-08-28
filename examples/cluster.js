@@ -1,58 +1,51 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Cluster');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
-goog.require('ol.style.Text');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {Cluster, OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Circle as CircleStyle, Fill, Stroke, Style, Text} from '../src/ol/style.js';
 
 
-var distance = document.getElementById('distance');
+const distance = document.getElementById('distance');
 
-var count = 20000;
-var features = new Array(count);
-var e = 4500000;
-for (var i = 0; i < count; ++i) {
-  var coordinates = [2 * e * Math.random() - e, 2 * e * Math.random() - e];
-  features[i] = new ol.Feature(new ol.geom.Point(coordinates));
+const count = 20000;
+const features = new Array(count);
+const e = 4500000;
+for (let i = 0; i < count; ++i) {
+  const coordinates = [2 * e * Math.random() - e, 2 * e * Math.random() - e];
+  features[i] = new Feature(new Point(coordinates));
 }
 
-var source = new ol.source.Vector({
+const source = new VectorSource({
   features: features
 });
 
-var clusterSource = new ol.source.Cluster({
+const clusterSource = new Cluster({
   distance: parseInt(distance.value, 10),
   source: source
 });
 
-var styleCache = {};
-var clusters = new ol.layer.Vector({
+const styleCache = {};
+const clusters = new VectorLayer({
   source: clusterSource,
   style: function(feature) {
-    var size = feature.get('features').length;
-    var style = styleCache[size];
+    const size = feature.get('features').length;
+    let style = styleCache[size];
     if (!style) {
-      style = new ol.style.Style({
-        image: new ol.style.Circle({
+      style = new Style({
+        image: new CircleStyle({
           radius: 10,
-          stroke: new ol.style.Stroke({
+          stroke: new Stroke({
             color: '#fff'
           }),
-          fill: new ol.style.Fill({
+          fill: new Fill({
             color: '#3399CC'
           })
         }),
-        text: new ol.style.Text({
+        text: new Text({
           text: size.toString(),
-          fill: new ol.style.Fill({
+          fill: new Fill({
             color: '#fff'
           })
         })
@@ -63,14 +56,14 @@ var clusters = new ol.layer.Vector({
   }
 });
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, clusters],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })

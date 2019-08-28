@@ -1,37 +1,34 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.interaction');
-goog.require('ol.interaction.Select');
-goog.require('ol.interaction.Translate');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import {defaults as defaultInteractions, Select, Translate} from '../src/ol/interaction.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import OSM from '../src/ol/source/OSM.js';
+import VectorSource from '../src/ol/source/Vector.js';
 
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vector = new VectorLayer({
+  source: new VectorSource({
     url: 'data/geojson/countries.geojson',
-    format: new ol.format.GeoJSON()
+    format: new GeoJSON()
   })
 });
 
-var select = new ol.interaction.Select();
+const select = new Select();
 
-var translate = new ol.interaction.Translate({
+const translate = new Translate({
   features: select.getFeatures()
 });
 
-var map = new ol.Map({
-  interactions: ol.interaction.defaults().extend([select, translate]),
+const map = new Map({
+  interactions: defaultInteractions().extend([select, translate]),
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })

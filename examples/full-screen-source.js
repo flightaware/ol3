@@ -1,25 +1,24 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.control.FullScreen');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {defaults as defaultControls, FullScreen} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
 
-var view = new ol.View({
+const view = new View({
   center: [-9101767, 2822912],
   zoom: 14
 });
 
-var map = new ol.Map({
-  controls: ol.control.defaults().extend([
-    new ol.control.FullScreen({
+const map = new Map({
+  controls: defaultControls().extend([
+    new FullScreen({
       source: 'fullscreen'
     })
   ]),
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',

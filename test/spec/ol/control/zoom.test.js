@@ -1,14 +1,12 @@
-goog.provide('ol.test.control.Zoom');
-
-goog.require('ol.control.Zoom');
+import Zoom from '../../../../src/ol/control/Zoom.js';
 
 describe('ol.control.Zoom', function() {
 
   describe('constructor', function() {
 
     it('can be constructed without arguments', function() {
-      var instance = new ol.control.Zoom();
-      expect(instance).to.be.an(ol.control.Zoom);
+      const instance = new Zoom();
+      expect(instance).to.be.an(Zoom);
     });
 
   });

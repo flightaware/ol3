@@ -1,31 +1,30 @@
-// NOCOMPILE
-// this example uses JSTS for which we don't have an externs file.
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import OSM from '../src/ol/source/OSM.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import LinearRing from '../src/ol/geom/LinearRing.js';
+import {Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon} from '../src/ol/geom.js';
 
-
-var source = new ol.source.Vector();
+const source = new VectorSource();
 fetch('data/geojson/roads-seoul.geojson').then(function(response) {
   return response.json();
 }).then(function(json) {
-  var format = new ol.format.GeoJSON();
-  var features = format.readFeatures(json, {featureProjection: 'EPSG:3857'});
+  const format = new GeoJSON();
+  const features = format.readFeatures(json, {featureProjection: 'EPSG:3857'});
 
-  var parser = new jsts.io.OL3Parser();
+  const parser = new jsts.io.OL3Parser();
+  parser.inject(Point, LineString, LinearRing, Polygon, MultiPoint, MultiLineString, MultiPolygon);
 
-  for (var i = 0; i < features.length; i++) {
-    var feature = features[i];
+  for (let i = 0; i < features.length; i++) {
+    const feature = features[i];
     // convert the OpenLayers geometry to a JSTS geometry
-    var jstsGeom = parser.read(feature.getGeometry());
+    const jstsGeom = parser.read(feature.getGeometry());
 
     // create a buffer of 40 meters around each line
-    var buffered = jstsGeom.buffer(40);
+    const buffered = jstsGeom.buffer(40);
 
     // convert back from JSTS and replace the geometry on the feature
     feature.setGeometry(parser.write(buffered));
@@ -33,19 +32,19 @@ fetch('data/geojson/roads-seoul.geojson').then(function(response) {
 
   source.addFeatures(features);
 });
-var vectorLayer = new ol.layer.Vector({
+const vectorLayer = new VectorLayer({
   source: source
 });
 
-var rasterLayer = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const rasterLayer = new TileLayer({
+  source: new OSM()
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [rasterLayer, vectorLayer],
   target: document.getElementById('map'),
-  view: new ol.View({
-    center: ol.proj.fromLonLat([126.979293, 37.528787]),
+  view: new View({
+    center: fromLonLat([126.979293, 37.528787]),
     zoom: 15
   })
 });

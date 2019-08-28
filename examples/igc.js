@@ -1,21 +1,16 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.format.IGC');
-goog.require('ol.geom.LineString');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import IGC from '../src/ol/format/IGC.js';
+import {LineString, Point} from '../src/ol/geom.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import OSM, {ATTRIBUTION} from '../src/ol/source/OSM.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
+import {getVectorContext} from '../src/ol/render.js';
 
 
-var colors = {
+const colors = {
   'Clement Latour': 'rgba(0, 0, 255, 0.7)',
   'Damien de Baesnt': 'rgba(0, 215, 255, 0.7)',
   'Sylvain Dhonneur': 'rgba(0, 165, 255, 0.7)',
@@ -23,13 +18,13 @@ var colors = {
   'Ulrich Prinz': 'rgba(0, 215, 255, 0.7)'
 };
 
-var styleCache = {};
-var styleFunction = function(feature) {
-  var color = colors[feature.get('PLT')];
-  var style = styleCache[color];
+const styleCache = {};
+const styleFunction = function(feature) {
+  const color = colors[feature.get('PLT')];
+  let style = styleCache[color];
   if (!style) {
-    style = new ol.style.Style({
-      stroke: new ol.style.Stroke({
+    style = new Style({
+      stroke: new Stroke({
         color: color,
         width: 3
       })
@@ -39,9 +34,9 @@ var styleFunction = function(feature) {
   return style;
 };
 
-var vectorSource = new ol.source.Vector();
+const vectorSource = new VectorSource();
 
-var igcUrls = [
+const igcUrls = [
   'data/igc/Clement-Latour.igc',
   'data/igc/Damien-de-Baenst.igc',
   'data/igc/Sylvain-Dhonneur.igc',
@@ -50,7 +45,7 @@ var igcUrls = [
 ];
 
 function get(url, callback) {
-  var client = new XMLHttpRequest();
+  const client = new XMLHttpRequest();
   client.open('GET', url);
   client.onload = function() {
     callback(client.responseText);
@@ -58,80 +53,77 @@ function get(url, callback) {
   client.send();
 }
 
-var igcFormat = new ol.format.IGC();
-for (var i = 0; i < igcUrls.length; ++i) {
+const igcFormat = new IGC();
+for (let i = 0; i < igcUrls.length; ++i) {
   get(igcUrls[i], function(data) {
-    var features = igcFormat.readFeatures(data,
-        {featureProjection: 'EPSG:3857'});
+    const features = igcFormat.readFeatures(data,
+      {featureProjection: 'EPSG:3857'});
     vectorSource.addFeatures(features);
   });
 }
 
-var time = {
+const time = {
   start: Infinity,
   stop: -Infinity,
   duration: 0
 };
 vectorSource.on('addfeature', function(event) {
-  var geometry = event.feature.getGeometry();
+  const geometry = event.feature.getGeometry();
   time.start = Math.min(time.start, geometry.getFirstCoordinate()[2]);
   time.stop = Math.max(time.stop, geometry.getLastCoordinate()[2]);
   time.duration = time.stop - time.start;
 });
 
+const vectorLayer = new VectorLayer({
+  source: vectorSource,
+  style: styleFunction
+});
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM({
+    new TileLayer({
+      source: new OSM({
         attributions: [
-          'All maps © <a href="http://www.opencyclemap.org/">OpenCycleMap</a>',
-          ol.source.OSM.ATTRIBUTION
+          'All maps © <a href="https://www.opencyclemap.org/">OpenCycleMap</a>',
+          ATTRIBUTION
         ],
-        url: 'http://{a-c}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
+        url: 'https://{a-c}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png' +
+            '?apikey=0e6fc415256d4fbb9b5166a718591d71'
       })
     }),
-    new ol.layer.Vector({
-      source: vectorSource,
-      style: styleFunction
-    })
+    vectorLayer
   ],
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     center: [703365.7089403362, 5714629.865071137],
     zoom: 9
   })
 });
 
 
-var point = null;
-var line = null;
-var displaySnap = function(coordinate) {
-  var closestFeature = vectorSource.getClosestFeatureToCoordinate(coordinate);
-  var info = document.getElementById('info');
+let point = null;
+let line = null;
+const displaySnap = function(coordinate) {
+  const closestFeature = vectorSource.getClosestFeatureToCoordinate(coordinate);
+  const info = document.getElementById('info');
   if (closestFeature === null) {
     point = null;
     line = null;
     info.innerHTML = '&nbsp;';
   } else {
-    var geometry = closestFeature.getGeometry();
-    var closestPoint = geometry.getClosestPoint(coordinate);
+    const geometry = closestFeature.getGeometry();
+    const closestPoint = geometry.getClosestPoint(coordinate);
     if (point === null) {
-      point = new ol.geom.Point(closestPoint);
+      point = new Point(closestPoint);
     } else {
       point.setCoordinates(closestPoint);
     }
-    var date = new Date(closestPoint[2] * 1000);
+    const date = new Date(closestPoint[2] * 1000);
     info.innerHTML =
         closestFeature.get('PLT') + ' (' + date.toUTCString() + ')';
-    var coordinates = [coordinate, [closestPoint[0], closestPoint[1]]];
+    const coordinates = [coordinate, [closestPoint[0], closestPoint[1]]];
     if (line === null) {
-      line = new ol.geom.LineString(coordinates);
+      line = new LineString(coordinates);
     } else {
       line.setCoordinates(coordinates);
     }
@@ -143,7 +135,7 @@ map.on('pointermove', function(evt) {
   if (evt.dragging) {
     return;
   }
-  var coordinate = map.getEventCoordinate(evt.originalEvent);
+  const coordinate = map.getEventCoordinate(evt.originalEvent);
   displaySnap(coordinate);
 });
 
@@ -151,20 +143,20 @@ map.on('click', function(evt) {
   displaySnap(evt.coordinate);
 });
 
-var stroke = new ol.style.Stroke({
+const stroke = new Stroke({
   color: 'rgba(255,0,0,0.9)',
   width: 1
 });
-var style = new ol.style.Style({
+const style = new Style({
   stroke: stroke,
-  image: new ol.style.Circle({
+  image: new CircleStyle({
     radius: 5,
     fill: null,
     stroke: stroke
   })
 });
-map.on('postcompose', function(evt) {
-  var vectorContext = evt.vectorContext;
+vectorLayer.on('postrender', function(evt) {
+  const vectorContext = getVectorContext(evt);
   vectorContext.setStyle(style);
   if (point !== null) {
     vectorContext.drawGeometry(point);
@@ -174,13 +166,13 @@ map.on('postcompose', function(evt) {
   }
 });
 
-var featureOverlay = new ol.layer.Vector({
-  source: new ol.source.Vector(),
+const featureOverlay = new VectorLayer({
+  source: new VectorSource(),
   map: map,
-  style: new ol.style.Style({
-    image: new ol.style.Circle({
+  style: new Style({
+    image: new CircleStyle({
       radius: 5,
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: 'rgba(255,0,0,0.9)'
       })
     })
@@ -188,14 +180,14 @@ var featureOverlay = new ol.layer.Vector({
 });
 
 document.getElementById('time').addEventListener('input', function() {
-  var value = parseInt(this.value, 10) / 100;
-  var m = time.start + (time.duration * value);
+  const value = parseInt(this.value, 10) / 100;
+  const m = time.start + (time.duration * value);
   vectorSource.forEachFeature(function(feature) {
-    var geometry = /** @type {ol.geom.LineString} */ (feature.getGeometry());
-    var coordinate = geometry.getCoordinateAtM(m, true);
-    var highlight = feature.get('highlight');
+    const geometry = /** @type {import("../src/ol/geom/LineString.js").default} */ (feature.getGeometry());
+    const coordinate = geometry.getCoordinateAtM(m, true);
+    let highlight = feature.get('highlight');
     if (highlight === undefined) {
-      highlight = new ol.Feature(new ol.geom.Point(coordinate));
+      highlight = new Feature(new Point(coordinate));
       feature.set('highlight', highlight);
       featureOverlay.getSource().addFeature(highlight);
     } else {

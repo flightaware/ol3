@@ -1,26 +1,29 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.TileJSON');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import OSM from '../src/ol/source/OSM.js';
+import TileJSON from '../src/ol/source/TileJSON.js';
 
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      className: 'bw',
+      source: new OSM()
     }),
-    new ol.layer.Tile({
-      source: new ol.source.TileJSON({
+    new TileLayer({
+      source: new TileJSON({
         url: 'https://api.tiles.mapbox.com/v3/mapbox.va-quake-aug.json?secure',
-        crossOrigin: 'anonymous'
+        crossOrigin: 'anonymous',
+        // this layer has transparency, so do not fade tiles:
+        transition: 0
       })
     })
   ],
   target: 'map',
-  view: new ol.View({
-    center: ol.proj.fromLonLat([-77.93255, 37.9555]),
+  view: new View({
+    center: fromLonLat([-77.93255, 37.9555]),
     zoom: 7
   })
 });

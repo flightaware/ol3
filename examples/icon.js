@@ -1,61 +1,59 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.Overlay');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.TileJSON');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import Overlay from '../src/ol/Overlay.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import TileJSON from '../src/ol/source/TileJSON.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Icon, Style} from '../src/ol/style.js';
 
 
-var iconFeature = new ol.Feature({
-  geometry: new ol.geom.Point([0, 0]),
+const iconFeature = new Feature({
+  geometry: new Point([0, 0]),
   name: 'Null Island',
   population: 4000,
   rainfall: 500
 });
 
-var iconStyle = new ol.style.Style({
-  image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+const iconStyle = new Style({
+  image: new Icon({
     anchor: [0.5, 46],
     anchorXUnits: 'fraction',
     anchorYUnits: 'pixels',
     src: 'data/icon.png'
-  }))
+  })
 });
 
 iconFeature.setStyle(iconStyle);
 
-var vectorSource = new ol.source.Vector({
+const vectorSource = new VectorSource({
   features: [iconFeature]
 });
 
-var vectorLayer = new ol.layer.Vector({
+const vectorLayer = new VectorLayer({
   source: vectorSource
 });
 
-var rasterLayer = new ol.layer.Tile({
-  source: new ol.source.TileJSON({
-    url: 'https://api.tiles.mapbox.com/v3/mapbox.geography-class.json?secure',
+const rasterLayer = new TileLayer({
+  source: new TileJSON({
+    url: 'https://a.tiles.mapbox.com/v3/aj.1x1-degrees.json',
     crossOrigin: ''
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [rasterLayer, vectorLayer],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 3
   })
 });
 
-var element = document.getElementById('popup');
+const element = document.getElementById('popup');
 
-var popup = new ol.Overlay({
+const popup = new Overlay({
   element: element,
   positioning: 'bottom-center',
   stopEvent: false,
@@ -65,17 +63,17 @@ map.addOverlay(popup);
 
 // display popup on click
 map.on('click', function(evt) {
-  var feature = map.forEachFeatureAtPixel(evt.pixel,
-      function(feature) {
-        return feature;
-      });
+  const feature = map.forEachFeatureAtPixel(evt.pixel,
+    function(feature) {
+      return feature;
+    });
   if (feature) {
-    var coordinates = feature.getGeometry().getCoordinates();
+    const coordinates = feature.getGeometry().getCoordinates();
     popup.setPosition(coordinates);
     $(element).popover({
-      'placement': 'top',
-      'html': true,
-      'content': feature.get('name')
+      placement: 'top',
+      html: true,
+      content: feature.get('name')
     });
     $(element).popover('show');
   } else {
@@ -89,7 +87,7 @@ map.on('pointermove', function(e) {
     $(element).popover('destroy');
     return;
   }
-  var pixel = map.getEventPixel(e.originalEvent);
-  var hit = map.hasFeatureAtPixel(pixel);
+  const pixel = map.getEventPixel(e.originalEvent);
+  const hit = map.hasFeatureAtPixel(pixel);
   map.getTarget().style.cursor = hit ? 'pointer' : '';
 });

@@ -1,25 +1,25 @@
-goog.provide('ol.test.render.Box');
-
-goog.require('ol.Disposable');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Polygon');
-goog.require('ol.render.Box');
+import Disposable from '../../../../src/ol/Disposable.js';
+import Map from '../../../../src/ol/Map.js';
+import View from '../../../../src/ol/View.js';
+import Polygon from '../../../../src/ol/geom/Polygon.js';
+import RenderBox from '../../../../src/ol/render/Box.js';
 
 
 describe('ol.render.Box', function() {
 
-  var box, map, target;
+  let box, map, target;
 
   beforeEach(function() {
-    box = new ol.render.Box('test-box');
+    box = new RenderBox('test-box');
 
     target = document.createElement('div');
+    target.style.height = '256px';
+
     document.body.appendChild(target);
 
-    map = new ol.Map({
+    map = new Map({
       target: target,
-      view: new ol.View({
+      view: new View({
         center: [0, 0],
         zoom: 0
       })
@@ -35,9 +35,9 @@ describe('ol.render.Box', function() {
 
   describe('constructor', function() {
     it('creates an instance', function() {
-      var obj = new ol.render.Box('test-box');
-      expect(obj).to.be.a(ol.render.Box);
-      expect(obj).to.be.a(ol.Disposable);
+      const obj = new RenderBox('test-box');
+      expect(obj).to.be.a(RenderBox);
+      expect(obj).to.be.a(Disposable);
       obj.dispose();
     });
     it('creates an absolutely positioned DIV with a className', function() {
@@ -52,7 +52,7 @@ describe('ol.render.Box', function() {
   });
 
   describe('#setPixels()', function() {
-    it('applies correct styles for a box', function()  {
+    it('applies correct styles for a box', function() {
       box.setPixels([1, 2], [4, 8]);
       expect(box.element_.style.left).to.be('1px');
       expect(box.element_.style.top).to.be('2px');
@@ -69,7 +69,7 @@ describe('ol.render.Box', function() {
     it('creates a polygon geometry', function() {
       expect(box.getGeometry()).to.be(null);
       box.setPixels([1, 2], [3, 4]);
-      expect(box.getGeometry()).to.be.a(ol.geom.Polygon);
+      expect(box.getGeometry()).to.be.a(Polygon);
     });
   });
 

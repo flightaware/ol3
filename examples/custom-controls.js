@@ -1,55 +1,42 @@
-goog.require('ol');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.control.Control');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
-
-
-/**
- * Define a namespace for the application.
- */
-window.app = {};
-var app = window.app;
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {defaults as defaultControls, Control} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
 
 //
 // Define rotate to north control.
 //
 
+class RotateNorthControl extends Control {
 
-/**
- * @constructor
- * @extends {ol.control.Control}
- * @param {Object=} opt_options Control options.
- */
-app.RotateNorthControl = function(opt_options) {
+  /**
+   * @param {Object=} opt_options Control options.
+   */
+  constructor(opt_options) {
+    const options = opt_options || {};
 
-  var options = opt_options || {};
+    const button = document.createElement('button');
+    button.innerHTML = 'N';
 
-  var button = document.createElement('button');
-  button.innerHTML = 'N';
+    const element = document.createElement('div');
+    element.className = 'rotate-north ol-unselectable ol-control';
+    element.appendChild(button);
 
-  var this_ = this;
-  var handleRotateNorth = function() {
-    this_.getMap().getView().setRotation(0);
-  };
+    super({
+      element: element,
+      target: options.target
+    });
 
-  button.addEventListener('click', handleRotateNorth, false);
-  button.addEventListener('touchstart', handleRotateNorth, false);
+    button.addEventListener('click', this.handleRotateNorth.bind(this), false);
+  }
 
-  var element = document.createElement('div');
-  element.className = 'rotate-north ol-unselectable ol-control';
-  element.appendChild(button);
+  handleRotateNorth() {
+    this.getMap().getView().setRotation(0);
+  }
 
-  ol.control.Control.call(this, {
-    element: element,
-    target: options.target
-  });
-
-};
-ol.inherits(app.RotateNorthControl, ol.control.Control);
+}
 
 
 //
@@ -57,21 +44,17 @@ ol.inherits(app.RotateNorthControl, ol.control.Control);
 //
 
 
-var map = new ol.Map({
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }).extend([
-    new app.RotateNorthControl()
+const map = new Map({
+  controls: defaultControls().extend([
+    new RotateNorthControl()
   ]),
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 3,
     rotation: 1

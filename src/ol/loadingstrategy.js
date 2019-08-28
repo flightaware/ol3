@@ -1,58 +1,59 @@
-goog.provide('ol.loadingstrategy');
+/**
+ * @module ol/loadingstrategy
+ */
 
 
 /**
  * Strategy function for loading all features with a single request.
- * @param {ol.Extent} extent Extent.
+ * @param {import("./extent.js").Extent} extent Extent.
  * @param {number} resolution Resolution.
- * @return {Array.<ol.Extent>} Extents.
+ * @return {Array<import("./extent.js").Extent>} Extents.
  * @api
  */
-ol.loadingstrategy.all = function(extent, resolution) {
+export function all(extent, resolution) {
   return [[-Infinity, -Infinity, Infinity, Infinity]];
-};
+}
 
 
 /**
  * Strategy function for loading features based on the view's extent and
  * resolution.
- * @param {ol.Extent} extent Extent.
+ * @param {import("./extent.js").Extent} extent Extent.
  * @param {number} resolution Resolution.
- * @return {Array.<ol.Extent>} Extents.
+ * @return {Array<import("./extent.js").Extent>} Extents.
  * @api
  */
-ol.loadingstrategy.bbox = function(extent, resolution) {
+export function bbox(extent, resolution) {
   return [extent];
-};
+}
 
 
 /**
  * Creates a strategy function for loading features based on a tile grid.
- * @param {ol.tilegrid.TileGrid} tileGrid Tile grid.
- * @return {function(ol.Extent, number): Array.<ol.Extent>} Loading strategy.
+ * @param {import("./tilegrid/TileGrid.js").default} tileGrid Tile grid.
+ * @return {function(import("./extent.js").Extent, number): Array<import("./extent.js").Extent>} Loading strategy.
  * @api
  */
-ol.loadingstrategy.tile = function(tileGrid) {
+export function tile(tileGrid) {
   return (
-      /**
-       * @param {ol.Extent} extent Extent.
-       * @param {number} resolution Resolution.
-       * @return {Array.<ol.Extent>} Extents.
-       */
-      function(extent, resolution) {
-        var z = tileGrid.getZForResolution(resolution);
-        var tileRange = tileGrid.getTileRangeForExtentAndZ(extent, z);
-        /** @type {Array.<ol.Extent>} */
-        var extents = [];
-        /** @type {ol.TileCoord} */
-        var tileCoord = [z, 0, 0];
-        for (tileCoord[1] = tileRange.minX; tileCoord[1] <= tileRange.maxX;
-             ++tileCoord[1]) {
-          for (tileCoord[2] = tileRange.minY; tileCoord[2] <= tileRange.maxY;
-               ++tileCoord[2]) {
-            extents.push(tileGrid.getTileCoordExtent(tileCoord));
-          }
+    /**
+     * @param {import("./extent.js").Extent} extent Extent.
+     * @param {number} resolution Resolution.
+     * @return {Array<import("./extent.js").Extent>} Extents.
+     */
+    function(extent, resolution) {
+      const z = tileGrid.getZForResolution(resolution);
+      const tileRange = tileGrid.getTileRangeForExtentAndZ(extent, z);
+      /** @type {Array<import("./extent.js").Extent>} */
+      const extents = [];
+      /** @type {import("./tilecoord.js").TileCoord} */
+      const tileCoord = [z, 0, 0];
+      for (tileCoord[1] = tileRange.minX; tileCoord[1] <= tileRange.maxX; ++tileCoord[1]) {
+        for (tileCoord[2] = tileRange.minY; tileCoord[2] <= tileRange.maxY; ++tileCoord[2]) {
+          extents.push(tileGrid.getTileCoordExtent(tileCoord));
         }
-        return extents;
-      });
-};
+      }
+      return extents;
+    }
+  );
+}

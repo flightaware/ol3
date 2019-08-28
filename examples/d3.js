@@ -1,95 +1,95 @@
-// NOCOMPILE
-goog.require('ol');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.extent');
-goog.require('ol.layer.Image');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.ImageCanvas');
-goog.require('ol.source.Stamen');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {getWidth, getCenter} from '../src/ol/extent.js';
+import {Layer, Tile as TileLayer} from '../src/ol/layer.js';
+import SourceState from '../src/ol/source/State.js';
+import {fromLonLat, toLonLat} from '../src/ol/proj.js';
+import Stamen from '../src/ol/source/Stamen.js';
 
+class CanvasLayer extends Layer {
 
-var map = new ol.Map({
+  constructor(options) {
+    super(options);
+
+    this.features = options.features;
+
+    this.svg = d3.select(document.createElement('div')).append('svg')
+      .style('position', 'absolute');
+
+    this.svg.append('path')
+      .datum(this.features)
+      .attr('class', 'boundary');
+  }
+
+  getSourceState() {
+    return SourceState.READY;
+  }
+
+  render(frameState) {
+    const width = frameState.size[0];
+    const height = frameState.size[1];
+    const projection = frameState.viewState.projection;
+    const d3Projection = d3.geoMercator().scale(1).translate([0, 0]);
+    let d3Path = d3.geoPath().projection(d3Projection);
+
+    const pixelBounds = d3Path.bounds(this.features);
+    const pixelBoundsWidth = pixelBounds[1][0] - pixelBounds[0][0];
+    const pixelBoundsHeight = pixelBounds[1][1] - pixelBounds[0][1];
+
+    const geoBounds = d3.geoBounds(this.features);
+    const geoBoundsLeftBottom = fromLonLat(geoBounds[0], projection);
+    const geoBoundsRightTop = fromLonLat(geoBounds[1], projection);
+    let geoBoundsWidth = geoBoundsRightTop[0] - geoBoundsLeftBottom[0];
+    if (geoBoundsWidth < 0) {
+      geoBoundsWidth += getWidth(projection.getExtent());
+    }
+    const geoBoundsHeight = geoBoundsRightTop[1] - geoBoundsLeftBottom[1];
+
+    const widthResolution = geoBoundsWidth / pixelBoundsWidth;
+    const heightResolution = geoBoundsHeight / pixelBoundsHeight;
+    const r = Math.max(widthResolution, heightResolution);
+    const scale = r / frameState.viewState.resolution;
+
+    const center = toLonLat(getCenter(frameState.extent), projection);
+    d3Projection.scale(scale).center(center).translate([width / 2, height / 2]);
+
+    d3Path = d3Path.projection(d3Projection);
+    d3Path(this.features);
+
+    this.svg.attr('width', width);
+    this.svg.attr('height', height);
+
+    this.svg.select('path')
+      .attr('d', d3Path);
+
+    return this.svg.node();
+  }
+}
+
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.Stamen({
+    new TileLayer({
+      source: new Stamen({
         layer: 'watercolor'
       })
     })
   ],
   target: 'map',
-  view: new ol.View({
-    center: ol.proj.fromLonLat([-97, 38]),
+  view: new View({
+    center: fromLonLat([-97, 38]),
     zoom: 4
   })
 });
 
 
 /**
- * Load the topojson data and create an ol.layer.Image for that data.
+ * Load the topojson data and create an ol/layer/Image for that data.
  */
-d3.json('data/topojson/us.json', function(error, us) {
-  var features = topojson.feature(us, us.objects.counties);
+d3.json('data/topojson/us.json').then(function(us) {
 
-  /**
-   * This function uses d3 to render the topojson features to a canvas.
-   * @param {ol.Extent} extent Extent.
-   * @param {number} resolution Resolution.
-   * @param {number} pixelRatio Pixel ratio.
-   * @param {ol.Size} size Size.
-   * @param {ol.proj.Projection} projection Projection.
-   * @return {HTMLCanvasElement} A canvas element.
-   */
-  var canvasFunction = function(extent, resolution, pixelRatio,
-      size, projection) {
-    var canvasWidth = size[0];
-    var canvasHeight = size[1];
-
-    var canvas = d3.select(document.createElement('canvas'));
-    canvas.attr('width', canvasWidth).attr('height', canvasHeight);
-
-    var context = canvas.node().getContext('2d');
-
-    var d3Projection = d3.geo.mercator().scale(1).translate([0, 0]);
-    var d3Path = d3.geo.path().projection(d3Projection);
-
-    var pixelBounds = d3Path.bounds(features);
-    var pixelBoundsWidth = pixelBounds[1][0] - pixelBounds[0][0];
-    var pixelBoundsHeight = pixelBounds[1][1] - pixelBounds[0][1];
-
-    var geoBounds = d3.geo.bounds(features);
-    var geoBoundsLeftBottom = ol.proj.transform(
-        geoBounds[0], 'EPSG:4326', projection);
-    var geoBoundsRightTop = ol.proj.transform(
-        geoBounds[1], 'EPSG:4326', projection);
-    var geoBoundsWidth = geoBoundsRightTop[0] - geoBoundsLeftBottom[0];
-    if (geoBoundsWidth < 0) {
-      geoBoundsWidth += ol.extent.getWidth(projection.getExtent());
-    }
-    var geoBoundsHeight = geoBoundsRightTop[1] - geoBoundsLeftBottom[1];
-
-    var widthResolution = geoBoundsWidth / pixelBoundsWidth;
-    var heightResolution = geoBoundsHeight / pixelBoundsHeight;
-    var r = Math.max(widthResolution, heightResolution);
-    var scale = r / (resolution / pixelRatio);
-
-    var center = ol.proj.transform(ol.extent.getCenter(extent),
-        projection, 'EPSG:4326');
-    d3Projection.scale(scale).center(center)
-        .translate([canvasWidth / 2, canvasHeight / 2]);
-    d3Path = d3Path.projection(d3Projection).context(context);
-    d3Path(features);
-    context.stroke();
-
-    return canvas[0][0];
-  };
-
-  var layer = new ol.layer.Image({
-    source: new ol.source.ImageCanvas({
-      canvasFunction: canvasFunction,
-      projection: 'EPSG:3857'
-    })
+  const layer = new CanvasLayer({
+    features: topojson.feature(us, us.objects.counties)
   });
+
   map.addLayer(layer);
 });

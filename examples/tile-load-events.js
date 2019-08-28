@@ -1,12 +1,12 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.TileJSON');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import TileJSON from '../src/ol/source/TileJSON.js';
 
 
 /**
  * Renders a progress bar.
- * @param {Element} el The target element.
+ * @param {HTMLElement} el The target element.
  * @constructor
  */
 function Progress(el) {
@@ -32,7 +32,7 @@ Progress.prototype.addLoading = function() {
  * Increment the count of loaded tiles.
  */
 Progress.prototype.addLoaded = function() {
-  var this_ = this;
+  const this_ = this;
   setTimeout(function() {
     ++this_.loaded;
     this_.update();
@@ -44,12 +44,12 @@ Progress.prototype.addLoaded = function() {
  * Update the progress bar.
  */
 Progress.prototype.update = function() {
-  var width = (this.loaded / this.loading * 100).toFixed(1) + '%';
+  const width = (this.loaded / this.loading * 100).toFixed(1) + '%';
   this.el.style.width = width;
   if (this.loading === this.loaded) {
     this.loading = 0;
     this.loaded = 0;
-    var this_ = this;
+    const this_ = this;
     setTimeout(function() {
       this_.hide();
     }, 500);
@@ -75,9 +75,9 @@ Progress.prototype.hide = function() {
   }
 };
 
-var progress = new Progress(document.getElementById('progress'));
+const progress = new Progress(document.getElementById('progress'));
 
-var source = new ol.source.TileJSON({
+const source = new TileJSON({
   url: 'https://api.tiles.mapbox.com/v3/mapbox.world-bright.json?secure',
   crossOrigin: 'anonymous'
 });
@@ -93,13 +93,12 @@ source.on('tileloaderror', function() {
   progress.addLoaded();
 });
 
-var map = new ol.Map({
-  logo: false,
+const map = new Map({
   layers: [
-    new ol.layer.Tile({source: source})
+    new TileLayer({source: source})
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })

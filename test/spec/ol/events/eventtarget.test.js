@@ -1,13 +1,11 @@
-goog.provide('ol.test.events.EventTarget');
-
-goog.require('ol.Disposable');
-goog.require('ol.events');
-goog.require('ol.events.Event');
-goog.require('ol.events.EventTarget');
+import Disposable from '../../../../src/ol/Disposable.js';
+import {listen} from '../../../../src/ol/events.js';
+import Event from '../../../../src/ol/events/Event.js';
+import EventTarget from '../../../../src/ol/events/Target.js';
 
 
 describe('ol.events.EventTarget', function() {
-  var called, events, eventTarget, spy1, spy2, spy3;
+  let called, events, eventTarget, spy1, spy2, spy3;
 
   beforeEach(function() {
     called = [];
@@ -19,13 +17,13 @@ describe('ol.events.EventTarget', function() {
     spy1 = spy.bind({id: 1});
     spy2 = spy.bind({id: 2});
     spy3 = spy.bind({id: 3});
-    eventTarget = new ol.events.EventTarget();
+    eventTarget = new EventTarget();
   });
 
   describe('constructor', function() {
     it('creates an instance', function() {
-      expect(eventTarget).to.be.a(ol.events.EventTarget);
-      expect(eventTarget).to.be.a(ol.Disposable);
+      expect(eventTarget).to.be.a(EventTarget);
+      expect(eventTarget).to.be.a(Disposable);
     });
     it('creates an empty listeners_ object', function() {
       expect(Object.keys(eventTarget.listeners_)).to.have.length(0);
@@ -48,7 +46,7 @@ describe('ol.events.EventTarget', function() {
   describe('#getListeners', function() {
     it('returns listeners for a type or undefined if none', function() {
       expect(eventTarget.getListeners('foo')).to.be(undefined);
-      var listeners = [function() {}];
+      const listeners = [function() {}];
       eventTarget.listeners_['foo'] = listeners;
       expect(eventTarget.getListeners('foo')).to.equal(listeners);
     });
@@ -107,13 +105,13 @@ describe('ol.events.EventTarget', function() {
     it('passes a default ol.events.Event object to listeners', function() {
       eventTarget.addEventListener('foo', spy1);
       eventTarget.dispatchEvent('foo');
-      expect(events[0]).to.be.a(ol.events.Event);
+      expect(events[0]).to.be.a(Event);
       expect(events[0].type).to.be('foo');
       expect(events[0].target).to.equal(eventTarget);
     });
     it('passes a custom event object with target to listeners', function() {
       eventTarget.addEventListener('foo', spy1);
-      var event = {
+      const event = {
         type: 'foo'
       };
       eventTarget.dispatchEvent(event);
@@ -156,7 +154,7 @@ describe('ol.events.EventTarget', function() {
 
   describe('#dispose()', function() {
     it('cleans up foreign references', function() {
-      ol.events.listen(eventTarget, 'foo', spy1, document);
+      listen(eventTarget, 'foo', spy1, document);
       expect(eventTarget.hasListener('foo')).to.be(true);
       eventTarget.dispose();
       expect(eventTarget.hasListener('foo')).to.be(false);

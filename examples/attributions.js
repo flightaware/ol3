@@ -1,29 +1,28 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.control.Attribution');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {defaults as defaultControls, Attribution} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
 
-var attribution = new ol.control.Attribution({
+const attribution = new Attribution({
   collapsible: false
 });
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
-  controls: ol.control.defaults({attribution: false}).extend([attribution]),
+  controls: defaultControls({attribution: false}).extend([attribution]),
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
 function checkSize() {
-  var small = map.getSize()[0] < 600;
+  const small = map.getSize()[0] < 600;
   attribution.setCollapsible(small);
   attribution.setCollapsed(small);
 }

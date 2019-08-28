@@ -1,18 +1,45 @@
-goog.provide('ol.renderer.vector');
-
-goog.require('ol');
-goog.require('ol.Image');
-goog.require('ol.render.ReplayType');
+/**
+ * @module ol/renderer/vector
+ */
+import {getUid} from '../util.js';
+import ImageState from '../ImageState.js';
+import GeometryType from '../geom/GeometryType.js';
+import BuilderType from '../render/canvas/BuilderType.js';
 
 
 /**
- * @param {ol.Feature|ol.render.Feature} feature1 Feature 1.
- * @param {ol.Feature|ol.render.Feature} feature2 Feature 2.
+ * Tolerance for geometry simplification in device pixels.
+ * @type {number}
+ */
+const SIMPLIFY_TOLERANCE = 0.5;
+
+
+/**
+ * @const
+ * @type {Object<import("../geom/GeometryType.js").default,
+ *                function(import("../render/canvas/BuilderGroup.js").default, import("../geom/Geometry.js").default,
+ *                         import("../style/Style.js").default, Object): void>}
+ */
+const GEOMETRY_RENDERERS = {
+  'Point': renderPointGeometry,
+  'LineString': renderLineStringGeometry,
+  'Polygon': renderPolygonGeometry,
+  'MultiPoint': renderMultiPointGeometry,
+  'MultiLineString': renderMultiLineStringGeometry,
+  'MultiPolygon': renderMultiPolygonGeometry,
+  'GeometryCollection': renderGeometryCollectionGeometry,
+  'Circle': renderCircleGeometry
+};
+
+
+/**
+ * @param {import("../Feature.js").FeatureLike} feature1 Feature 1.
+ * @param {import("../Feature.js").FeatureLike} feature2 Feature 2.
  * @return {number} Order.
  */
-ol.renderer.vector.defaultOrder = function(feature1, feature2) {
-  return ol.getUid(feature1) - ol.getUid(feature2);
-};
+export function defaultOrder(feature1, feature2) {
+  return parseInt(getUid(feature1), 10) - parseInt(getUid(feature2), 10);
+}
 
 
 /**
@@ -20,10 +47,10 @@ ol.renderer.vector.defaultOrder = function(feature1, feature2) {
  * @param {number} pixelRatio Pixel ratio.
  * @return {number} Squared pixel tolerance.
  */
-ol.renderer.vector.getSquaredTolerance = function(resolution, pixelRatio) {
-  var tolerance = ol.renderer.vector.getTolerance(resolution, pixelRatio);
+export function getSquaredTolerance(resolution, pixelRatio) {
+  const tolerance = getTolerance(resolution, pixelRatio);
   return tolerance * tolerance;
-};
+}
 
 
 /**
@@ -31,292 +58,259 @@ ol.renderer.vector.getSquaredTolerance = function(resolution, pixelRatio) {
  * @param {number} pixelRatio Pixel ratio.
  * @return {number} Pixel tolerance.
  */
-ol.renderer.vector.getTolerance = function(resolution, pixelRatio) {
-  return ol.SIMPLIFY_TOLERANCE * resolution / pixelRatio;
-};
+export function getTolerance(resolution, pixelRatio) {
+  return SIMPLIFY_TOLERANCE * resolution / pixelRatio;
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.Circle} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Builder group.
+ * @param {import("../geom/Circle.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").default} feature Feature.
  */
-ol.renderer.vector.renderCircleGeometry_ = function(replayGroup, geometry, style, feature) {
-  var fillStyle = style.getFill();
-  var strokeStyle = style.getStroke();
+function renderCircleGeometry(builderGroup, geometry, style, feature) {
+  const fillStyle = style.getFill();
+  const strokeStyle = style.getStroke();
   if (fillStyle || strokeStyle) {
-    var polygonReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.POLYGON);
-    polygonReplay.setFillStrokeStyle(fillStyle, strokeStyle);
-    polygonReplay.drawCircle(geometry, feature);
+    const circleReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.CIRCLE);
+    circleReplay.setFillStrokeStyle(fillStyle, strokeStyle);
+    circleReplay.drawCircle(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    textReplay.drawText(geometry.getCenter(), 0, 2, 2, geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(false));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @param {ol.style.Style} style Style.
+ * @param {import("../render/canvas/BuilderGroup.js").default} replayGroup Replay group.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
+ * @param {import("../style/Style.js").default} style Style.
  * @param {number} squaredTolerance Squared tolerance.
- * @param {function(this: T, ol.events.Event)} listener Listener function.
+ * @param {function(this: T, import("../events/Event.js").default): void} listener Listener function.
  * @param {T} thisArg Value to use as `this` when executing `listener`.
  * @return {boolean} `true` if style is loading.
  * @template T
  */
-ol.renderer.vector.renderFeature = function(
-    replayGroup, feature, style, squaredTolerance, listener, thisArg) {
-  var loading = false;
-  var imageStyle, imageState;
-  imageStyle = style.getImage();
+export function renderFeature(replayGroup, feature, style, squaredTolerance, listener, thisArg) {
+  let loading = false;
+  const imageStyle = style.getImage();
   if (imageStyle) {
-    imageState = imageStyle.getImageState();
-    if (imageState == ol.Image.State.LOADED ||
-        imageState == ol.Image.State.ERROR) {
+    let imageState = imageStyle.getImageState();
+    if (imageState == ImageState.LOADED || imageState == ImageState.ERROR) {
       imageStyle.unlistenImageChange(listener, thisArg);
     } else {
-      if (imageState == ol.Image.State.IDLE) {
+      if (imageState == ImageState.IDLE) {
         imageStyle.load();
       }
       imageState = imageStyle.getImageState();
-      ol.DEBUG && console.assert(imageState == ol.Image.State.LOADING,
-          'imageState should be LOADING');
       imageStyle.listenImageChange(listener, thisArg);
       loading = true;
     }
   }
-  ol.renderer.vector.renderFeature_(replayGroup, feature, style,
-      squaredTolerance);
+  renderFeatureInternal(replayGroup, feature, style, squaredTolerance);
+
   return loading;
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @param {ol.style.Style} style Style.
+ * @param {import("../render/canvas/BuilderGroup.js").default} replayGroup Replay group.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
+ * @param {import("../style/Style.js").default} style Style.
  * @param {number} squaredTolerance Squared tolerance.
- * @private
  */
-ol.renderer.vector.renderFeature_ = function(
-    replayGroup, feature, style, squaredTolerance) {
-  var geometry = style.getGeometryFunction()(feature);
+function renderFeatureInternal(replayGroup, feature, style, squaredTolerance) {
+  const geometry = style.getGeometryFunction()(feature);
   if (!geometry) {
     return;
   }
-  var simplifiedGeometry = geometry.getSimplifiedGeometry(squaredTolerance);
-  var geometryRenderer =
-      ol.renderer.vector.GEOMETRY_RENDERERS_[simplifiedGeometry.getType()];
-  geometryRenderer(replayGroup, simplifiedGeometry, style, feature);
-};
+  const simplifiedGeometry = geometry.getSimplifiedGeometry(squaredTolerance);
+  const renderer = style.getRenderer();
+  if (renderer) {
+    renderGeometry(replayGroup, simplifiedGeometry, style, feature);
+  } else {
+    const geometryRenderer = GEOMETRY_RENDERERS[simplifiedGeometry.getType()];
+    geometryRenderer(replayGroup, simplifiedGeometry, style, feature);
+  }
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.GeometryCollection} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} replayGroup Replay group.
+ * @param {import("../geom/Geometry.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderGeometryCollectionGeometry_ = function(replayGroup, geometry, style, feature) {
-  var geometries = geometry.getGeometriesArray();
-  var i, ii;
+function renderGeometry(replayGroup, geometry, style, feature) {
+  if (geometry.getType() == GeometryType.GEOMETRY_COLLECTION) {
+    const geometries = /** @type {import("../geom/GeometryCollection.js").default} */ (geometry).getGeometries();
+    for (let i = 0, ii = geometries.length; i < ii; ++i) {
+      renderGeometry(replayGroup, geometries[i], style, feature);
+    }
+    return;
+  }
+  const replay = replayGroup.getBuilder(style.getZIndex(), BuilderType.DEFAULT);
+  replay.drawCustom(/** @type {import("../geom/SimpleGeometry.js").default} */ (geometry), feature, style.getRenderer());
+}
+
+
+/**
+ * @param {import("../render/canvas/BuilderGroup.js").default} replayGroup Replay group.
+ * @param {import("../geom/GeometryCollection.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").default} feature Feature.
+ */
+function renderGeometryCollectionGeometry(replayGroup, geometry, style, feature) {
+  const geometries = geometry.getGeometriesArray();
+  let i, ii;
   for (i = 0, ii = geometries.length; i < ii; ++i) {
-    var geometryRenderer =
-        ol.renderer.vector.GEOMETRY_RENDERERS_[geometries[i].getType()];
+    const geometryRenderer =
+        GEOMETRY_RENDERERS[geometries[i].getType()];
     geometryRenderer(replayGroup, geometries[i], style, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.LineString|ol.render.Feature} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/LineString.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderLineStringGeometry_ = function(replayGroup, geometry, style, feature) {
-  var strokeStyle = style.getStroke();
+function renderLineStringGeometry(builderGroup, geometry, style, feature) {
+  const strokeStyle = style.getStroke();
   if (strokeStyle) {
-    var lineStringReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.LINE_STRING);
+    const lineStringReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.LINE_STRING);
     lineStringReplay.setFillStrokeStyle(null, strokeStyle);
     lineStringReplay.drawLineString(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    textReplay.drawText(geometry.getFlatMidpoint(), 0, 2, 2, geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(false));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.MultiLineString|ol.render.Feature} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/MultiLineString.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderMultiLineStringGeometry_ = function(replayGroup, geometry, style, feature) {
-  var strokeStyle = style.getStroke();
+function renderMultiLineStringGeometry(builderGroup, geometry, style, feature) {
+  const strokeStyle = style.getStroke();
   if (strokeStyle) {
-    var lineStringReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.LINE_STRING);
+    const lineStringReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.LINE_STRING);
     lineStringReplay.setFillStrokeStyle(null, strokeStyle);
     lineStringReplay.drawMultiLineString(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    var flatMidpointCoordinates = geometry.getFlatMidpoints();
-    textReplay.drawText(flatMidpointCoordinates, 0,
-        flatMidpointCoordinates.length, 2, geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(false));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.MultiPolygon} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/MultiPolygon.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").default} feature Feature.
  */
-ol.renderer.vector.renderMultiPolygonGeometry_ = function(replayGroup, geometry, style, feature) {
-  var fillStyle = style.getFill();
-  var strokeStyle = style.getStroke();
+function renderMultiPolygonGeometry(builderGroup, geometry, style, feature) {
+  const fillStyle = style.getFill();
+  const strokeStyle = style.getStroke();
   if (strokeStyle || fillStyle) {
-    var polygonReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.POLYGON);
+    const polygonReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.POLYGON);
     polygonReplay.setFillStrokeStyle(fillStyle, strokeStyle);
     polygonReplay.drawMultiPolygon(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    var flatInteriorPointCoordinates = geometry.getFlatInteriorPoints();
-    textReplay.drawText(flatInteriorPointCoordinates, 0,
-        flatInteriorPointCoordinates.length, 2, geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(false));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.Point|ol.render.Feature} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/Point.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderPointGeometry_ = function(replayGroup, geometry, style, feature) {
-  var imageStyle = style.getImage();
+function renderPointGeometry(builderGroup, geometry, style, feature) {
+  const imageStyle = style.getImage();
   if (imageStyle) {
-    if (imageStyle.getImageState() != ol.Image.State.LOADED) {
+    if (imageStyle.getImageState() != ImageState.LOADED) {
       return;
     }
-    var imageReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.IMAGE);
-    imageReplay.setImageStyle(imageStyle);
+    const imageReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.IMAGE);
+    imageReplay.setImageStyle(imageStyle, builderGroup.addDeclutter(false));
     imageReplay.drawPoint(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    textReplay.drawText(geometry.getFlatCoordinates(), 0, 2, 2, geometry,
-        feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(!!imageStyle));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.MultiPoint|ol.render.Feature} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/MultiPoint.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderMultiPointGeometry_ = function(replayGroup, geometry, style, feature) {
-  var imageStyle = style.getImage();
+function renderMultiPointGeometry(builderGroup, geometry, style, feature) {
+  const imageStyle = style.getImage();
   if (imageStyle) {
-    if (imageStyle.getImageState() != ol.Image.State.LOADED) {
+    if (imageStyle.getImageState() != ImageState.LOADED) {
       return;
     }
-    var imageReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.IMAGE);
-    imageReplay.setImageStyle(imageStyle);
+    const imageReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.IMAGE);
+    imageReplay.setImageStyle(imageStyle, builderGroup.addDeclutter(false));
     imageReplay.drawMultiPoint(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    var flatCoordinates = geometry.getFlatCoordinates();
-    textReplay.drawText(flatCoordinates, 0, flatCoordinates.length,
-        geometry.getStride(), geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(!!imageStyle));
+    textReplay.drawText(geometry, feature);
   }
-};
+}
 
 
 /**
- * @param {ol.render.ReplayGroup} replayGroup Replay group.
- * @param {ol.geom.Polygon|ol.render.Feature} geometry Geometry.
- * @param {ol.style.Style} style Style.
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
+ * @param {import("../render/canvas/BuilderGroup.js").default} builderGroup Replay group.
+ * @param {import("../geom/Polygon.js").default|import("../render/Feature.js").default} geometry Geometry.
+ * @param {import("../style/Style.js").default} style Style.
+ * @param {import("../Feature.js").FeatureLike} feature Feature.
  */
-ol.renderer.vector.renderPolygonGeometry_ = function(replayGroup, geometry, style, feature) {
-  var fillStyle = style.getFill();
-  var strokeStyle = style.getStroke();
+function renderPolygonGeometry(builderGroup, geometry, style, feature) {
+  const fillStyle = style.getFill();
+  const strokeStyle = style.getStroke();
   if (fillStyle || strokeStyle) {
-    var polygonReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.POLYGON);
+    const polygonReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.POLYGON);
     polygonReplay.setFillStrokeStyle(fillStyle, strokeStyle);
     polygonReplay.drawPolygon(geometry, feature);
   }
-  var textStyle = style.getText();
+  const textStyle = style.getText();
   if (textStyle) {
-    var textReplay = replayGroup.getReplay(
-        style.getZIndex(), ol.render.ReplayType.TEXT);
-    textReplay.setTextStyle(textStyle);
-    textReplay.drawText(
-        geometry.getFlatInteriorPoint(), 0, 2, 2, geometry, feature);
+    const textReplay = builderGroup.getBuilder(style.getZIndex(), BuilderType.TEXT);
+    textReplay.setTextStyle(textStyle, builderGroup.addDeclutter(false));
+    textReplay.drawText(geometry, feature);
   }
-};
-
-
-/**
- * @const
- * @private
- * @type {Object.<ol.geom.GeometryType,
- *                function(ol.render.ReplayGroup, ol.geom.Geometry,
- *                         ol.style.Style, Object)>}
- */
-ol.renderer.vector.GEOMETRY_RENDERERS_ = {
-  'Point': ol.renderer.vector.renderPointGeometry_,
-  'LineString': ol.renderer.vector.renderLineStringGeometry_,
-  'Polygon': ol.renderer.vector.renderPolygonGeometry_,
-  'MultiPoint': ol.renderer.vector.renderMultiPointGeometry_,
-  'MultiLineString': ol.renderer.vector.renderMultiLineStringGeometry_,
-  'MultiPolygon': ol.renderer.vector.renderMultiPolygonGeometry_,
-  'GeometryCollection': ol.renderer.vector.renderGeometryCollectionGeometry_,
-  'Circle': ol.renderer.vector.renderCircleGeometry_
-};
+}

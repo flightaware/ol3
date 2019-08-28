@@ -1,48 +1,46 @@
-goog.provide('ol.test.events.Event');
-
-goog.require('ol.events.Event');
+import Event, {preventDefault, stopPropagation} from '../../../../src/ol/events/Event.js';
 
 describe('ol.events.Event', function() {
 
   describe('constructor', function() {
     it('takes a type as argument', function() {
-      var event = new ol.events.Event('foo');
+      const event = new Event('foo');
       expect(event.type).to.be('foo');
     });
     it('does not set the propagationStopped flag', function() {
-      var event = new ol.events.Event('foo');
+      const event = new Event('foo');
       expect(event.propagationStopped).to.be(undefined);
     });
   });
 
   describe('#preventDefault', function() {
     it('sets the propagationStopped flag', function() {
-      var event = new ol.events.Event('foo');
+      const event = new Event('foo');
       event.preventDefault();
       expect(event.propagationStopped).to.be(true);
     });
-    it('is the same as #stopPropagation', function() {
-      var event = new ol.events.Event('foo');
-      expect(event.stopPropagation).to.equal(event.preventDefault);
+    it('does the same as #stopPropagation', function() {
+      const event = new Event('foo');
+      expect(event.stopPropagation()).to.equal(event.preventDefault());
     });
   });
 
   describe('ol.events.Event.preventDefault', function() {
     it('calls preventDefault on the event object', function() {
-      var event = {
+      const event = {
         preventDefault: sinon.spy()
       };
-      ol.events.Event.preventDefault(event);
+      preventDefault(event);
       expect(event.preventDefault.called).to.be(true);
     });
   });
 
   describe('ol.events.Event.stopPropagation', function() {
     it('calls preventDefault on the event object', function() {
-      var event = {
+      const event = {
         stopPropagation: sinon.spy()
       };
-      ol.events.Event.stopPropagation(event);
+      stopPropagation(event);
       expect(event.stopPropagation.called).to.be(true);
     });
   });

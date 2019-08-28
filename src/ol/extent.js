@@ -1,80 +1,58 @@
-goog.provide('ol.extent');
-goog.provide('ol.extent.Corner');
-goog.provide('ol.extent.Relationship');
-
-goog.require('ol');
-goog.require('ol.asserts');
+/**
+ * @module ol/extent
+ */
+import {assert} from './asserts.js';
+import Corner from './extent/Corner.js';
+import Relationship from './extent/Relationship.js';
 
 
 /**
- * Extent corner.
- * @enum {string}
+ * An array of numbers representing an extent: `[minx, miny, maxx, maxy]`.
+ * @typedef {Array<number>} Extent
+ * @api
  */
-ol.extent.Corner = {
-  BOTTOM_LEFT: 'bottom-left',
-  BOTTOM_RIGHT: 'bottom-right',
-  TOP_LEFT: 'top-left',
-  TOP_RIGHT: 'top-right'
-};
-
-
-/**
- * Relationship to an extent.
- * @enum {number}
- */
-ol.extent.Relationship = {
-  UNKNOWN: 0,
-  INTERSECTING: 1,
-  ABOVE: 2,
-  RIGHT: 4,
-  BELOW: 8,
-  LEFT: 16
-};
-
 
 /**
  * Build an extent that includes all given coordinates.
  *
- * @param {Array.<ol.Coordinate>} coordinates Coordinates.
- * @return {ol.Extent} Bounding extent.
- * @api stable
+ * @param {Array<import("./coordinate.js").Coordinate>} coordinates Coordinates.
+ * @return {Extent} Bounding extent.
+ * @api
  */
-ol.extent.boundingExtent = function(coordinates) {
-  var extent = ol.extent.createEmpty();
-  for (var i = 0, ii = coordinates.length; i < ii; ++i) {
-    ol.extent.extendCoordinate(extent, coordinates[i]);
+export function boundingExtent(coordinates) {
+  const extent = createEmpty();
+  for (let i = 0, ii = coordinates.length; i < ii; ++i) {
+    extendCoordinate(extent, coordinates[i]);
   }
   return extent;
-};
+}
 
 
 /**
- * @param {Array.<number>} xs Xs.
- * @param {Array.<number>} ys Ys.
- * @param {ol.Extent=} opt_extent Destination extent.
+ * @param {Array<number>} xs Xs.
+ * @param {Array<number>} ys Ys.
+ * @param {Extent=} opt_extent Destination extent.
  * @private
- * @return {ol.Extent} Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.boundingExtentXYs_ = function(xs, ys, opt_extent) {
-  ol.DEBUG && console.assert(xs.length > 0, 'xs length should be larger than 0');
-  ol.DEBUG && console.assert(ys.length > 0, 'ys length should be larger than 0');
-  var minX = Math.min.apply(null, xs);
-  var minY = Math.min.apply(null, ys);
-  var maxX = Math.max.apply(null, xs);
-  var maxY = Math.max.apply(null, ys);
-  return ol.extent.createOrUpdate(minX, minY, maxX, maxY, opt_extent);
-};
+function _boundingExtentXYs(xs, ys, opt_extent) {
+  const minX = Math.min.apply(null, xs);
+  const minY = Math.min.apply(null, ys);
+  const maxX = Math.max.apply(null, xs);
+  const maxY = Math.max.apply(null, ys);
+  return createOrUpdate(minX, minY, maxX, maxY, opt_extent);
+}
 
 
 /**
  * Return extent increased by the provided value.
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @param {number} value The amount by which the extent should be buffered.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
- * @api stable
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
+ * @api
  */
-ol.extent.buffer = function(extent, value, opt_extent) {
+export function buffer(extent, value, opt_extent) {
   if (opt_extent) {
     opt_extent[0] = extent[0] - value;
     opt_extent[1] = extent[1] - value;
@@ -89,17 +67,17 @@ ol.extent.buffer = function(extent, value, opt_extent) {
       extent[3] + value
     ];
   }
-};
+}
 
 
 /**
  * Creates a clone of an extent.
  *
- * @param {ol.Extent} extent Extent to clone.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} The clone.
+ * @param {Extent} extent Extent to clone.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} The clone.
  */
-ol.extent.clone = function(extent, opt_extent) {
+export function clone(extent, opt_extent) {
   if (opt_extent) {
     opt_extent[0] = extent[0];
     opt_extent[1] = extent[1];
@@ -109,17 +87,17 @@ ol.extent.clone = function(extent, opt_extent) {
   } else {
     return extent.slice();
   }
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @param {number} x X.
  * @param {number} y Y.
  * @return {number} Closest squared distance.
  */
-ol.extent.closestSquaredDistanceXY = function(extent, x, y) {
-  var dx, dy;
+export function closestSquaredDistanceXY(extent, x, y) {
+  let dx, dy;
   if (x < extent[0]) {
     dx = extent[0] - x;
   } else if (extent[2] < x) {
@@ -135,20 +113,20 @@ ol.extent.closestSquaredDistanceXY = function(extent, x, y) {
     dy = 0;
   }
   return dx * dx + dy * dy;
-};
+}
 
 
 /**
  * Check if the passed coordinate is contained or on the edge of the extent.
  *
- * @param {ol.Extent} extent Extent.
- * @param {ol.Coordinate} coordinate Coordinate.
+ * @param {Extent} extent Extent.
+ * @param {import("./coordinate.js").Coordinate} coordinate Coordinate.
  * @return {boolean} The coordinate is contained in the extent.
- * @api stable
+ * @api
  */
-ol.extent.containsCoordinate = function(extent, coordinate) {
-  return ol.extent.containsXY(extent, coordinate[0], coordinate[1]);
-};
+export function containsCoordinate(extent, coordinate) {
+  return containsXY(extent, coordinate[0], coordinate[1]);
+}
 
 
 /**
@@ -157,72 +135,72 @@ ol.extent.containsCoordinate = function(extent, coordinate) {
  * An extent is deemed contained if it lies completely within the other extent,
  * including if they share one or more edges.
  *
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent 2.
  * @return {boolean} The second extent is contained by or on the edge of the
  *     first.
- * @api stable
+ * @api
  */
-ol.extent.containsExtent = function(extent1, extent2) {
+export function containsExtent(extent1, extent2) {
   return extent1[0] <= extent2[0] && extent2[2] <= extent1[2] &&
       extent1[1] <= extent2[1] && extent2[3] <= extent1[3];
-};
+}
 
 
 /**
  * Check if the passed coordinate is contained or on the edge of the extent.
  *
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @param {number} x X coordinate.
  * @param {number} y Y coordinate.
  * @return {boolean} The x, y values are contained in the extent.
- * @api stable
+ * @api
  */
-ol.extent.containsXY = function(extent, x, y) {
+export function containsXY(extent, x, y) {
   return extent[0] <= x && x <= extent[2] && extent[1] <= y && y <= extent[3];
-};
+}
 
 
 /**
  * Get the relationship between a coordinate and extent.
- * @param {ol.Extent} extent The extent.
- * @param {ol.Coordinate} coordinate The coordinate.
- * @return {number} The relationship (bitwise compare with
- *     ol.extent.Relationship).
+ * @param {Extent} extent The extent.
+ * @param {import("./coordinate.js").Coordinate} coordinate The coordinate.
+ * @return {Relationship} The relationship (bitwise compare with
+ *     import("./extent/Relationship.js").Relationship).
  */
-ol.extent.coordinateRelationship = function(extent, coordinate) {
-  var minX = extent[0];
-  var minY = extent[1];
-  var maxX = extent[2];
-  var maxY = extent[3];
-  var x = coordinate[0];
-  var y = coordinate[1];
-  var relationship = ol.extent.Relationship.UNKNOWN;
+export function coordinateRelationship(extent, coordinate) {
+  const minX = extent[0];
+  const minY = extent[1];
+  const maxX = extent[2];
+  const maxY = extent[3];
+  const x = coordinate[0];
+  const y = coordinate[1];
+  let relationship = Relationship.UNKNOWN;
   if (x < minX) {
-    relationship = relationship | ol.extent.Relationship.LEFT;
+    relationship = relationship | Relationship.LEFT;
   } else if (x > maxX) {
-    relationship = relationship | ol.extent.Relationship.RIGHT;
+    relationship = relationship | Relationship.RIGHT;
   }
   if (y < minY) {
-    relationship = relationship | ol.extent.Relationship.BELOW;
+    relationship = relationship | Relationship.BELOW;
   } else if (y > maxY) {
-    relationship = relationship | ol.extent.Relationship.ABOVE;
+    relationship = relationship | Relationship.ABOVE;
   }
-  if (relationship === ol.extent.Relationship.UNKNOWN) {
-    relationship = ol.extent.Relationship.INTERSECTING;
+  if (relationship === Relationship.UNKNOWN) {
+    relationship = Relationship.INTERSECTING;
   }
   return relationship;
-};
+}
 
 
 /**
  * Create an empty extent.
- * @return {ol.Extent} Empty extent.
- * @api stable
+ * @return {Extent} Empty extent.
+ * @api
  */
-ol.extent.createEmpty = function() {
+export function createEmpty() {
   return [Infinity, Infinity, -Infinity, -Infinity];
-};
+}
 
 
 /**
@@ -231,10 +209,10 @@ ol.extent.createEmpty = function() {
  * @param {number} minY Minimum Y.
  * @param {number} maxX Maximum X.
  * @param {number} maxY Maximum Y.
- * @param {ol.Extent=} opt_extent Destination extent.
- * @return {ol.Extent} Extent.
+ * @param {Extent=} opt_extent Destination extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdate = function(minX, minY, maxX, maxY, opt_extent) {
+export function createOrUpdate(minX, minY, maxX, maxY, opt_extent) {
   if (opt_extent) {
     opt_extent[0] = minX;
     opt_extent[1] = minY;
@@ -244,102 +222,88 @@ ol.extent.createOrUpdate = function(minX, minY, maxX, maxY, opt_extent) {
   } else {
     return [minX, minY, maxX, maxY];
   }
-};
+}
 
 
 /**
  * Create a new empty extent or make the provided one empty.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdateEmpty = function(opt_extent) {
-  return ol.extent.createOrUpdate(
-      Infinity, Infinity, -Infinity, -Infinity, opt_extent);
-};
+export function createOrUpdateEmpty(opt_extent) {
+  return createOrUpdate(
+    Infinity, Infinity, -Infinity, -Infinity, opt_extent);
+}
 
 
 /**
- * @param {ol.Coordinate} coordinate Coordinate.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
+ * @param {import("./coordinate.js").Coordinate} coordinate Coordinate.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdateFromCoordinate = function(coordinate, opt_extent) {
-  var x = coordinate[0];
-  var y = coordinate[1];
-  return ol.extent.createOrUpdate(x, y, x, y, opt_extent);
-};
+export function createOrUpdateFromCoordinate(coordinate, opt_extent) {
+  const x = coordinate[0];
+  const y = coordinate[1];
+  return createOrUpdate(x, y, x, y, opt_extent);
+}
 
 
 /**
- * @param {Array.<ol.Coordinate>} coordinates Coordinates.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
+ * @param {Array<import("./coordinate.js").Coordinate>} coordinates Coordinates.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdateFromCoordinates = function(coordinates, opt_extent) {
-  var extent = ol.extent.createOrUpdateEmpty(opt_extent);
-  return ol.extent.extendCoordinates(extent, coordinates);
-};
+export function createOrUpdateFromCoordinates(coordinates, opt_extent) {
+  const extent = createOrUpdateEmpty(opt_extent);
+  return extendCoordinates(extent, coordinates);
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
  * @param {number} end End.
  * @param {number} stride Stride.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdateFromFlatCoordinates = function(flatCoordinates, offset, end, stride, opt_extent) {
-  var extent = ol.extent.createOrUpdateEmpty(opt_extent);
-  return ol.extent.extendFlatCoordinates(
-      extent, flatCoordinates, offset, end, stride);
-};
-
+export function createOrUpdateFromFlatCoordinates(flatCoordinates, offset, end, stride, opt_extent) {
+  const extent = createOrUpdateEmpty(opt_extent);
+  return extendFlatCoordinates(extent, flatCoordinates, offset, end, stride);
+}
 
 /**
- * @param {Array.<Array.<ol.Coordinate>>} rings Rings.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
+ * @param {Array<Array<import("./coordinate.js").Coordinate>>} rings Rings.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.createOrUpdateFromRings = function(rings, opt_extent) {
-  var extent = ol.extent.createOrUpdateEmpty(opt_extent);
-  return ol.extent.extendRings(extent, rings);
-};
-
-
-/**
- * Empty an extent in place.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Extent} Extent.
- */
-ol.extent.empty = function(extent) {
-  extent[0] = extent[1] = Infinity;
-  extent[2] = extent[3] = -Infinity;
-  return extent;
-};
+export function createOrUpdateFromRings(rings, opt_extent) {
+  const extent = createOrUpdateEmpty(opt_extent);
+  return extendRings(extent, rings);
+}
 
 
 /**
  * Determine if two extents are equivalent.
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent 2.
  * @return {boolean} The two extents are equivalent.
- * @api stable
+ * @api
  */
-ol.extent.equals = function(extent1, extent2) {
+export function equals(extent1, extent2) {
   return extent1[0] == extent2[0] && extent1[2] == extent2[2] &&
       extent1[1] == extent2[1] && extent1[3] == extent2[3];
-};
+}
 
 
 /**
  * Modify an extent to include another extent.
- * @param {ol.Extent} extent1 The extent to be modified.
- * @param {ol.Extent} extent2 The extent that will be included in the first.
- * @return {ol.Extent} A reference to the first (extended) extent.
- * @api stable
+ * @param {Extent} extent1 The extent to be modified.
+ * @param {Extent} extent2 The extent that will be included in the first.
+ * @return {Extent} A reference to the first (extended) extent.
+ * @api
  */
-ol.extent.extend = function(extent1, extent2) {
+export function extend(extent1, extent2) {
   if (extent2[0] < extent1[0]) {
     extent1[0] = extent2[0];
   }
@@ -353,14 +317,14 @@ ol.extent.extend = function(extent1, extent2) {
     extent1[3] = extent2[3];
   }
   return extent1;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
- * @param {ol.Coordinate} coordinate Coordinate.
+ * @param {Extent} extent Extent.
+ * @param {import("./coordinate.js").Coordinate} coordinate Coordinate.
  */
-ol.extent.extendCoordinate = function(extent, coordinate) {
+export function extendCoordinate(extent, coordinate) {
   if (coordinate[0] < extent[0]) {
     extent[0] = coordinate[0];
   }
@@ -373,249 +337,247 @@ ol.extent.extendCoordinate = function(extent, coordinate) {
   if (coordinate[1] > extent[3]) {
     extent[3] = coordinate[1];
   }
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
- * @param {Array.<ol.Coordinate>} coordinates Coordinates.
- * @return {ol.Extent} Extent.
+ * @param {Extent} extent Extent.
+ * @param {Array<import("./coordinate.js").Coordinate>} coordinates Coordinates.
+ * @return {Extent} Extent.
  */
-ol.extent.extendCoordinates = function(extent, coordinates) {
-  var i, ii;
-  for (i = 0, ii = coordinates.length; i < ii; ++i) {
-    ol.extent.extendCoordinate(extent, coordinates[i]);
+export function extendCoordinates(extent, coordinates) {
+  for (let i = 0, ii = coordinates.length; i < ii; ++i) {
+    extendCoordinate(extent, coordinates[i]);
   }
   return extent;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Extent} extent Extent.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
  * @param {number} end End.
  * @param {number} stride Stride.
- * @return {ol.Extent} Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.extendFlatCoordinates = function(extent, flatCoordinates, offset, end, stride) {
+export function extendFlatCoordinates(extent, flatCoordinates, offset, end, stride) {
   for (; offset < end; offset += stride) {
-    ol.extent.extendXY(
-        extent, flatCoordinates[offset], flatCoordinates[offset + 1]);
+    extendXY(extent, flatCoordinates[offset], flatCoordinates[offset + 1]);
   }
   return extent;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
- * @param {Array.<Array.<ol.Coordinate>>} rings Rings.
- * @return {ol.Extent} Extent.
+ * @param {Extent} extent Extent.
+ * @param {Array<Array<import("./coordinate.js").Coordinate>>} rings Rings.
+ * @return {Extent} Extent.
  */
-ol.extent.extendRings = function(extent, rings) {
-  var i, ii;
-  for (i = 0, ii = rings.length; i < ii; ++i) {
-    ol.extent.extendCoordinates(extent, rings[i]);
+export function extendRings(extent, rings) {
+  for (let i = 0, ii = rings.length; i < ii; ++i) {
+    extendCoordinates(extent, rings[i]);
   }
   return extent;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @param {number} x X.
  * @param {number} y Y.
  */
-ol.extent.extendXY = function(extent, x, y) {
+export function extendXY(extent, x, y) {
   extent[0] = Math.min(extent[0], x);
   extent[1] = Math.min(extent[1], y);
   extent[2] = Math.max(extent[2], x);
   extent[3] = Math.max(extent[3], y);
-};
+}
 
 
 /**
  * This function calls `callback` for each corner of the extent. If the
  * callback returns a truthy value the function returns that value
  * immediately. Otherwise the function returns `false`.
- * @param {ol.Extent} extent Extent.
- * @param {function(this:T, ol.Coordinate): S} callback Callback.
- * @param {T=} opt_this Value to use as `this` when executing `callback`.
+ * @param {Extent} extent Extent.
+ * @param {function(import("./coordinate.js").Coordinate): S} callback Callback.
  * @return {S|boolean} Value.
- * @template S, T
+ * @template S
  */
-ol.extent.forEachCorner = function(extent, callback, opt_this) {
-  var val;
-  val = callback.call(opt_this, ol.extent.getBottomLeft(extent));
+export function forEachCorner(extent, callback) {
+  let val;
+  val = callback(getBottomLeft(extent));
   if (val) {
     return val;
   }
-  val = callback.call(opt_this, ol.extent.getBottomRight(extent));
+  val = callback(getBottomRight(extent));
   if (val) {
     return val;
   }
-  val = callback.call(opt_this, ol.extent.getTopRight(extent));
+  val = callback(getTopRight(extent));
   if (val) {
     return val;
   }
-  val = callback.call(opt_this, ol.extent.getTopLeft(extent));
+  val = callback(getTopLeft(extent));
   if (val) {
     return val;
   }
   return false;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
+ * Get the size of an extent.
+ * @param {Extent} extent Extent.
  * @return {number} Area.
+ * @api
  */
-ol.extent.getArea = function(extent) {
-  var area = 0;
-  if (!ol.extent.isEmpty(extent)) {
-    area = ol.extent.getWidth(extent) * ol.extent.getHeight(extent);
+export function getArea(extent) {
+  let area = 0;
+  if (!isEmpty(extent)) {
+    area = getWidth(extent) * getHeight(extent);
   }
   return area;
-};
+}
 
 
 /**
  * Get the bottom left coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Coordinate} Bottom left coordinate.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @return {import("./coordinate.js").Coordinate} Bottom left coordinate.
+ * @api
  */
-ol.extent.getBottomLeft = function(extent) {
+export function getBottomLeft(extent) {
   return [extent[0], extent[1]];
-};
+}
 
 
 /**
  * Get the bottom right coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Coordinate} Bottom right coordinate.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @return {import("./coordinate.js").Coordinate} Bottom right coordinate.
+ * @api
  */
-ol.extent.getBottomRight = function(extent) {
+export function getBottomRight(extent) {
   return [extent[2], extent[1]];
-};
+}
 
 
 /**
  * Get the center coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Coordinate} Center.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @return {import("./coordinate.js").Coordinate} Center.
+ * @api
  */
-ol.extent.getCenter = function(extent) {
+export function getCenter(extent) {
   return [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
-};
+}
 
 
 /**
  * Get a corner coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @param {ol.extent.Corner} corner Corner.
- * @return {ol.Coordinate} Corner coordinate.
+ * @param {Extent} extent Extent.
+ * @param {Corner} corner Corner.
+ * @return {import("./coordinate.js").Coordinate} Corner coordinate.
  */
-ol.extent.getCorner = function(extent, corner) {
-  var coordinate;
-  if (corner === ol.extent.Corner.BOTTOM_LEFT) {
-    coordinate = ol.extent.getBottomLeft(extent);
-  } else if (corner === ol.extent.Corner.BOTTOM_RIGHT) {
-    coordinate = ol.extent.getBottomRight(extent);
-  } else if (corner === ol.extent.Corner.TOP_LEFT) {
-    coordinate = ol.extent.getTopLeft(extent);
-  } else if (corner === ol.extent.Corner.TOP_RIGHT) {
-    coordinate = ol.extent.getTopRight(extent);
+export function getCorner(extent, corner) {
+  let coordinate;
+  if (corner === Corner.BOTTOM_LEFT) {
+    coordinate = getBottomLeft(extent);
+  } else if (corner === Corner.BOTTOM_RIGHT) {
+    coordinate = getBottomRight(extent);
+  } else if (corner === Corner.TOP_LEFT) {
+    coordinate = getTopLeft(extent);
+  } else if (corner === Corner.TOP_RIGHT) {
+    coordinate = getTopRight(extent);
   } else {
-    ol.asserts.assert(false, 13); // Invalid corner
+    assert(false, 13); // Invalid corner
   }
-  return /** @type {!ol.Coordinate} */ (coordinate);
-};
+  return coordinate;
+}
 
 
 /**
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent 2.
  * @return {number} Enlarged area.
  */
-ol.extent.getEnlargedArea = function(extent1, extent2) {
-  var minX = Math.min(extent1[0], extent2[0]);
-  var minY = Math.min(extent1[1], extent2[1]);
-  var maxX = Math.max(extent1[2], extent2[2]);
-  var maxY = Math.max(extent1[3], extent2[3]);
+export function getEnlargedArea(extent1, extent2) {
+  const minX = Math.min(extent1[0], extent2[0]);
+  const minY = Math.min(extent1[1], extent2[1]);
+  const maxX = Math.max(extent1[2], extent2[2]);
+  const maxY = Math.max(extent1[3], extent2[3]);
   return (maxX - minX) * (maxY - minY);
-};
+}
 
 
 /**
- * @param {ol.Coordinate} center Center.
+ * @param {import("./coordinate.js").Coordinate} center Center.
  * @param {number} resolution Resolution.
  * @param {number} rotation Rotation.
- * @param {ol.Size} size Size.
- * @param {ol.Extent=} opt_extent Destination extent.
- * @return {ol.Extent} Extent.
+ * @param {import("./size.js").Size} size Size.
+ * @param {Extent=} opt_extent Destination extent.
+ * @return {Extent} Extent.
  */
-ol.extent.getForViewAndSize = function(center, resolution, rotation, size, opt_extent) {
-  var dx = resolution * size[0] / 2;
-  var dy = resolution * size[1] / 2;
-  var cosRotation = Math.cos(rotation);
-  var sinRotation = Math.sin(rotation);
-  var xCos = dx * cosRotation;
-  var xSin = dx * sinRotation;
-  var yCos = dy * cosRotation;
-  var ySin = dy * sinRotation;
-  var x = center[0];
-  var y = center[1];
-  var x0 = x - xCos + ySin;
-  var x1 = x - xCos - ySin;
-  var x2 = x + xCos - ySin;
-  var x3 = x + xCos + ySin;
-  var y0 = y - xSin - yCos;
-  var y1 = y - xSin + yCos;
-  var y2 = y + xSin + yCos;
-  var y3 = y + xSin - yCos;
-  return ol.extent.createOrUpdate(
-      Math.min(x0, x1, x2, x3), Math.min(y0, y1, y2, y3),
-      Math.max(x0, x1, x2, x3), Math.max(y0, y1, y2, y3),
-      opt_extent);
-};
+export function getForViewAndSize(center, resolution, rotation, size, opt_extent) {
+  const dx = resolution * size[0] / 2;
+  const dy = resolution * size[1] / 2;
+  const cosRotation = Math.cos(rotation);
+  const sinRotation = Math.sin(rotation);
+  const xCos = dx * cosRotation;
+  const xSin = dx * sinRotation;
+  const yCos = dy * cosRotation;
+  const ySin = dy * sinRotation;
+  const x = center[0];
+  const y = center[1];
+  const x0 = x - xCos + ySin;
+  const x1 = x - xCos - ySin;
+  const x2 = x + xCos - ySin;
+  const x3 = x + xCos + ySin;
+  const y0 = y - xSin - yCos;
+  const y1 = y - xSin + yCos;
+  const y2 = y + xSin + yCos;
+  const y3 = y + xSin - yCos;
+  return createOrUpdate(
+    Math.min(x0, x1, x2, x3), Math.min(y0, y1, y2, y3),
+    Math.max(x0, x1, x2, x3), Math.max(y0, y1, y2, y3),
+    opt_extent);
+}
 
 
 /**
  * Get the height of an extent.
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @return {number} Height.
- * @api stable
+ * @api
  */
-ol.extent.getHeight = function(extent) {
+export function getHeight(extent) {
   return extent[3] - extent[1];
-};
+}
 
 
 /**
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent 2.
  * @return {number} Intersection area.
  */
-ol.extent.getIntersectionArea = function(extent1, extent2) {
-  var intersection = ol.extent.getIntersection(extent1, extent2);
-  return ol.extent.getArea(intersection);
-};
+export function getIntersectionArea(extent1, extent2) {
+  const intersection = getIntersection(extent1, extent2);
+  return getArea(intersection);
+}
 
 
 /**
  * Get the intersection of two extents.
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
- * @param {ol.Extent=} opt_extent Optional extent to populate with intersection.
- * @return {ol.Extent} Intersecting extent.
- * @api stable
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent 2.
+ * @param {Extent=} opt_extent Optional extent to populate with intersection.
+ * @return {Extent} Intersecting extent.
+ * @api
  */
-ol.extent.getIntersection = function(extent1, extent2, opt_extent) {
-  var intersection = opt_extent ? opt_extent : ol.extent.createEmpty();
-  if (ol.extent.intersects(extent1, extent2)) {
+export function getIntersection(extent1, extent2, opt_extent) {
+  const intersection = opt_extent ? opt_extent : createEmpty();
+  if (intersects(extent1, extent2)) {
     if (extent1[0] > extent2[0]) {
       intersection[0] = extent1[0];
     } else {
@@ -636,119 +598,98 @@ ol.extent.getIntersection = function(extent1, extent2, opt_extent) {
     } else {
       intersection[3] = extent2[3];
     }
+  } else {
+    createOrUpdateEmpty(intersection);
   }
   return intersection;
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @return {number} Margin.
  */
-ol.extent.getMargin = function(extent) {
-  return ol.extent.getWidth(extent) + ol.extent.getHeight(extent);
-};
+export function getMargin(extent) {
+  return getWidth(extent) + getHeight(extent);
+}
 
 
 /**
  * Get the size (width, height) of an extent.
- * @param {ol.Extent} extent The extent.
- * @return {ol.Size} The extent size.
- * @api stable
+ * @param {Extent} extent The extent.
+ * @return {import("./size.js").Size} The extent size.
+ * @api
  */
-ol.extent.getSize = function(extent) {
+export function getSize(extent) {
   return [extent[2] - extent[0], extent[3] - extent[1]];
-};
+}
 
 
 /**
  * Get the top left coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Coordinate} Top left coordinate.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @return {import("./coordinate.js").Coordinate} Top left coordinate.
+ * @api
  */
-ol.extent.getTopLeft = function(extent) {
+export function getTopLeft(extent) {
   return [extent[0], extent[3]];
-};
+}
 
 
 /**
  * Get the top right coordinate of an extent.
- * @param {ol.Extent} extent Extent.
- * @return {ol.Coordinate} Top right coordinate.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @return {import("./coordinate.js").Coordinate} Top right coordinate.
+ * @api
  */
-ol.extent.getTopRight = function(extent) {
+export function getTopRight(extent) {
   return [extent[2], extent[3]];
-};
+}
 
 
 /**
  * Get the width of an extent.
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @return {number} Width.
- * @api stable
+ * @api
  */
-ol.extent.getWidth = function(extent) {
+export function getWidth(extent) {
   return extent[2] - extent[0];
-};
+}
 
 
 /**
  * Determine if one extent intersects another.
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent.
+ * @param {Extent} extent1 Extent 1.
+ * @param {Extent} extent2 Extent.
  * @return {boolean} The two extents intersect.
- * @api stable
+ * @api
  */
-ol.extent.intersects = function(extent1, extent2) {
+export function intersects(extent1, extent2) {
   return extent1[0] <= extent2[2] &&
       extent1[2] >= extent2[0] &&
       extent1[1] <= extent2[3] &&
       extent1[3] >= extent2[1];
-};
+}
 
 
 /**
  * Determine if an extent is empty.
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @return {boolean} Is empty.
- * @api stable
+ * @api
  */
-ol.extent.isEmpty = function(extent) {
+export function isEmpty(extent) {
   return extent[2] < extent[0] || extent[3] < extent[1];
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
- * @return {boolean} Is infinite.
+ * @param {Extent} extent Extent.
+ * @param {Extent=} opt_extent Extent.
+ * @return {Extent} Extent.
  */
-ol.extent.isInfinite = function(extent) {
-  return extent[0] == -Infinity || extent[1] == -Infinity ||
-      extent[2] == Infinity || extent[3] == Infinity;
-};
-
-
-/**
- * @param {ol.Extent} extent Extent.
- * @param {ol.Coordinate} coordinate Coordinate.
- * @return {ol.Coordinate} Coordinate.
- */
-ol.extent.normalize = function(extent, coordinate) {
-  return [
-    (coordinate[0] - extent[0]) / (extent[2] - extent[0]),
-    (coordinate[1] - extent[1]) / (extent[3] - extent[1])
-  ];
-};
-
-
-/**
- * @param {ol.Extent} extent Extent.
- * @param {ol.Extent=} opt_extent Extent.
- * @return {ol.Extent} Extent.
- */
-ol.extent.returnOrUpdate = function(extent, opt_extent) {
+export function returnOrUpdate(extent, opt_extent) {
   if (opt_extent) {
     opt_extent[0] = extent[0];
     opt_extent[1] = extent[1];
@@ -758,69 +699,69 @@ ol.extent.returnOrUpdate = function(extent, opt_extent) {
   } else {
     return extent;
   }
-};
+}
 
 
 /**
- * @param {ol.Extent} extent Extent.
+ * @param {Extent} extent Extent.
  * @param {number} value Value.
  */
-ol.extent.scaleFromCenter = function(extent, value) {
-  var deltaX = ((extent[2] - extent[0]) / 2) * (value - 1);
-  var deltaY = ((extent[3] - extent[1]) / 2) * (value - 1);
+export function scaleFromCenter(extent, value) {
+  const deltaX = ((extent[2] - extent[0]) / 2) * (value - 1);
+  const deltaY = ((extent[3] - extent[1]) / 2) * (value - 1);
   extent[0] -= deltaX;
   extent[2] += deltaX;
   extent[1] -= deltaY;
   extent[3] += deltaY;
-};
+}
 
 
 /**
  * Determine if the segment between two coordinates intersects (crosses,
  * touches, or is contained by) the provided extent.
- * @param {ol.Extent} extent The extent.
- * @param {ol.Coordinate} start Segment start coordinate.
- * @param {ol.Coordinate} end Segment end coordinate.
+ * @param {Extent} extent The extent.
+ * @param {import("./coordinate.js").Coordinate} start Segment start coordinate.
+ * @param {import("./coordinate.js").Coordinate} end Segment end coordinate.
  * @return {boolean} The segment intersects the extent.
  */
-ol.extent.intersectsSegment = function(extent, start, end) {
-  var intersects = false;
-  var startRel = ol.extent.coordinateRelationship(extent, start);
-  var endRel = ol.extent.coordinateRelationship(extent, end);
-  if (startRel === ol.extent.Relationship.INTERSECTING ||
-      endRel === ol.extent.Relationship.INTERSECTING) {
+export function intersectsSegment(extent, start, end) {
+  let intersects = false;
+  const startRel = coordinateRelationship(extent, start);
+  const endRel = coordinateRelationship(extent, end);
+  if (startRel === Relationship.INTERSECTING ||
+      endRel === Relationship.INTERSECTING) {
     intersects = true;
   } else {
-    var minX = extent[0];
-    var minY = extent[1];
-    var maxX = extent[2];
-    var maxY = extent[3];
-    var startX = start[0];
-    var startY = start[1];
-    var endX = end[0];
-    var endY = end[1];
-    var slope = (endY - startY) / (endX - startX);
-    var x, y;
-    if (!!(endRel & ol.extent.Relationship.ABOVE) &&
-        !(startRel & ol.extent.Relationship.ABOVE)) {
+    const minX = extent[0];
+    const minY = extent[1];
+    const maxX = extent[2];
+    const maxY = extent[3];
+    const startX = start[0];
+    const startY = start[1];
+    const endX = end[0];
+    const endY = end[1];
+    const slope = (endY - startY) / (endX - startX);
+    let x, y;
+    if (!!(endRel & Relationship.ABOVE) &&
+        !(startRel & Relationship.ABOVE)) {
       // potentially intersects top
       x = endX - ((endY - maxY) / slope);
       intersects = x >= minX && x <= maxX;
     }
-    if (!intersects && !!(endRel & ol.extent.Relationship.RIGHT) &&
-        !(startRel & ol.extent.Relationship.RIGHT)) {
+    if (!intersects && !!(endRel & Relationship.RIGHT) &&
+        !(startRel & Relationship.RIGHT)) {
       // potentially intersects right
       y = endY - ((endX - maxX) * slope);
       intersects = y >= minY && y <= maxY;
     }
-    if (!intersects && !!(endRel & ol.extent.Relationship.BELOW) &&
-        !(startRel & ol.extent.Relationship.BELOW)) {
+    if (!intersects && !!(endRel & Relationship.BELOW) &&
+        !(startRel & Relationship.BELOW)) {
       // potentially intersects bottom
       x = endX - ((endY - minY) / slope);
       intersects = x >= minX && x <= maxX;
     }
-    if (!intersects && !!(endRel & ol.extent.Relationship.LEFT) &&
-        !(startRel & ol.extent.Relationship.LEFT)) {
+    if (!intersects && !!(endRel & Relationship.LEFT) &&
+        !(startRel & Relationship.LEFT)) {
       // potentially intersects left
       y = endY - ((endX - minX) * slope);
       intersects = y >= minY && y <= maxY;
@@ -828,40 +769,27 @@ ol.extent.intersectsSegment = function(extent, start, end) {
 
   }
   return intersects;
-};
-
-
-/**
- * @param {ol.Extent} extent1 Extent 1.
- * @param {ol.Extent} extent2 Extent 2.
- * @return {boolean} Touches.
- */
-ol.extent.touches = function(extent1, extent2) {
-  var intersects = ol.extent.intersects(extent1, extent2);
-  return intersects &&
-      (extent1[0] == extent2[2] || extent1[2] == extent2[0] ||
-       extent1[1] == extent2[3] || extent1[3] == extent2[1]);
-};
+}
 
 
 /**
  * Apply a transform function to the extent.
- * @param {ol.Extent} extent Extent.
- * @param {ol.TransformFunction} transformFn Transform function.  Called with
- * [minX, minY, maxX, maxY] extent coordinates.
- * @param {ol.Extent=} opt_extent Destination extent.
- * @return {ol.Extent} Extent.
- * @api stable
+ * @param {Extent} extent Extent.
+ * @param {import("./proj.js").TransformFunction} transformFn Transform function.
+ * Called with `[minX, minY, maxX, maxY]` extent coordinates.
+ * @param {Extent=} opt_extent Destination extent.
+ * @return {Extent} Extent.
+ * @api
  */
-ol.extent.applyTransform = function(extent, transformFn, opt_extent) {
-  var coordinates = [
+export function applyTransform(extent, transformFn, opt_extent) {
+  const coordinates = [
     extent[0], extent[1],
     extent[0], extent[3],
     extent[2], extent[1],
     extent[2], extent[3]
   ];
   transformFn(coordinates, coordinates, 2);
-  var xs = [coordinates[0], coordinates[2], coordinates[4], coordinates[6]];
-  var ys = [coordinates[1], coordinates[3], coordinates[5], coordinates[7]];
-  return ol.extent.boundingExtentXYs_(xs, ys, opt_extent);
-};
+  const xs = [coordinates[0], coordinates[2], coordinates[4], coordinates[6]];
+  const ys = [coordinates[1], coordinates[3], coordinates[5], coordinates[7]];
+  return _boundingExtentXYs(xs, ys, opt_extent);
+}

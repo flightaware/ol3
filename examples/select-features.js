@@ -1,62 +1,60 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.events.condition');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.interaction.Select');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {click, pointerMove, altKeyOnly} from '../src/ol/events/condition.js';
+import GeoJSON from '../src/ol/format/GeoJSON.js';
+import Select from '../src/ol/interaction/Select.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import OSM from '../src/ol/source/OSM.js';
+import VectorSource from '../src/ol/source/Vector.js';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vector = new VectorLayer({
+  source: new VectorSource({
     url: 'data/geojson/countries.geojson',
-    format: new ol.format.GeoJSON()
+    format: new GeoJSON()
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
-var select = null;  // ref to currently selected interaction
+let select = null; // ref to currently selected interaction
 
 // select interaction working on "singleclick"
-var selectSingleClick = new ol.interaction.Select();
+const selectSingleClick = new Select();
 
 // select interaction working on "click"
-var selectClick = new ol.interaction.Select({
-  condition: ol.events.condition.click
+const selectClick = new Select({
+  condition: click
 });
 
 // select interaction working on "pointermove"
-var selectPointerMove = new ol.interaction.Select({
-  condition: ol.events.condition.pointerMove
+const selectPointerMove = new Select({
+  condition: pointerMove
 });
 
-var selectAltClick = new ol.interaction.Select({
+const selectAltClick = new Select({
   condition: function(mapBrowserEvent) {
-    return ol.events.condition.click(mapBrowserEvent) &&
-        ol.events.condition.altKeyOnly(mapBrowserEvent);
+    return click(mapBrowserEvent) && altKeyOnly(mapBrowserEvent);
   }
 });
 
-var selectElement = document.getElementById('type');
+const selectElement = document.getElementById('type');
 
-var changeInteraction = function() {
+const changeInteraction = function() {
   if (select !== null) {
     map.removeInteraction(select);
   }
-  var value = selectElement.value;
+  const value = selectElement.value;
   if (value == 'singleclick') {
     select = selectSingleClick;
   } else if (value == 'click') {

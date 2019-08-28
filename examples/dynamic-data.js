@@ -1,74 +1,67 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.MultiPoint');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {MultiPoint, Point} from '../src/ol/geom.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
+import {getVectorContext} from '../src/ol/render.js';
 
+const tileLayer = new TileLayer({
+  source: new OSM()
+});
 
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
-    })
-  ],
+const map = new Map({
+  layers: [tileLayer],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
-var imageStyle = new ol.style.Style({
-  image: new ol.style.Circle({
+const imageStyle = new Style({
+  image: new CircleStyle({
     radius: 5,
-    snapToPixel: false,
-    fill: new ol.style.Fill({color: 'yellow'}),
-    stroke: new ol.style.Stroke({color: 'red', width: 1})
+    fill: new Fill({color: 'yellow'}),
+    stroke: new Stroke({color: 'red', width: 1})
   })
 });
 
-var headInnerImageStyle = new ol.style.Style({
-  image: new ol.style.Circle({
+const headInnerImageStyle = new Style({
+  image: new CircleStyle({
     radius: 2,
-    snapToPixel: false,
-    fill: new ol.style.Fill({color: 'blue'})
+    fill: new Fill({color: 'blue'})
   })
 });
 
-var headOuterImageStyle = new ol.style.Style({
-  image: new ol.style.Circle({
+const headOuterImageStyle = new Style({
+  image: new CircleStyle({
     radius: 5,
-    snapToPixel: false,
-    fill: new ol.style.Fill({color: 'black'})
+    fill: new Fill({color: 'black'})
   })
 });
 
-var n = 200;
-var omegaTheta = 30000; // Rotation period in ms
-var R = 7e6;
-var r = 2e6;
-var p = 2e6;
-map.on('postcompose', function(event) {
-  var vectorContext = event.vectorContext;
-  var frameState = event.frameState;
-  var theta = 2 * Math.PI * frameState.time / omegaTheta;
-  var coordinates = [];
-  var i;
+const n = 200;
+const omegaTheta = 30000; // Rotation period in ms
+const R = 7e6;
+const r = 2e6;
+const p = 2e6;
+tileLayer.on('postrender', function(event) {
+  const vectorContext = getVectorContext(event);
+  const frameState = event.frameState;
+  const theta = 2 * Math.PI * frameState.time / omegaTheta;
+  const coordinates = [];
+  let i;
   for (i = 0; i < n; ++i) {
-    var t = theta + 2 * Math.PI * i / n;
-    var x = (R + r) * Math.cos(t) + p * Math.cos((R + r) * t / r);
-    var y = (R + r) * Math.sin(t) + p * Math.sin((R + r) * t / r);
+    const t = theta + 2 * Math.PI * i / n;
+    const x = (R + r) * Math.cos(t) + p * Math.cos((R + r) * t / r);
+    const y = (R + r) * Math.sin(t) + p * Math.sin((R + r) * t / r);
     coordinates.push([x, y]);
   }
   vectorContext.setStyle(imageStyle);
-  vectorContext.drawGeometry(new ol.geom.MultiPoint(coordinates));
+  vectorContext.drawGeometry(new MultiPoint(coordinates));
 
-  var headPoint = new ol.geom.Point(coordinates[coordinates.length - 1]);
+  const headPoint = new Point(coordinates[coordinates.length - 1]);
 
   vectorContext.setStyle(headOuterImageStyle);
   vectorContext.drawGeometry(headPoint);

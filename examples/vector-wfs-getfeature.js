@@ -1,38 +1,39 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.filter');
-goog.require('ol.format.WFS');
-goog.require('ol.format.GeoJSON');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {
+  equalTo as equalToFilter,
+  like as likeFilter,
+  and as andFilter
+} from '../src/ol/format/filter.js';
+import {WFS, GeoJSON} from '../src/ol/format.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Stroke, Style} from '../src/ol/style.js';
 
 
-var vectorSource = new ol.source.Vector();
-var vector = new ol.layer.Vector({
+const vectorSource = new VectorSource();
+const vector = new VectorLayer({
   source: vectorSource,
-  style: new ol.style.Style({
-    stroke: new ol.style.Stroke({
+  style: new Style({
+    stroke: new Stroke({
       color: 'rgba(0, 0, 255, 1.0)',
       width: 2
     })
   })
 });
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
+const raster = new TileLayer({
+  source: new BingMaps({
     imagerySet: 'Aerial',
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [-8908887.277395891, 5381918.072437216],
     maxZoom: 19,
     zoom: 12
@@ -40,26 +41,26 @@ var map = new ol.Map({
 });
 
 // generate a GetFeature request
-var featureRequest = new ol.format.WFS().writeGetFeature({
+const featureRequest = new WFS().writeGetFeature({
   srsName: 'EPSG:3857',
   featureNS: 'http://openstreemap.org',
   featurePrefix: 'osm',
   featureTypes: ['water_areas'],
   outputFormat: 'application/json',
-  filter: ol.format.filter.and(
-    ol.format.filter.like('name', 'Mississippi*'),
-    ol.format.filter.equalTo('waterway', 'riverbank')
+  filter: andFilter(
+    likeFilter('name', 'Mississippi*'),
+    equalToFilter('waterway', 'riverbank')
   )
 });
 
 // then post the request and add the received features to a layer
-fetch('http://demo.boundlessgeo.com/geoserver/wfs', {
+fetch('https://ahocevar.com/geoserver/wfs', {
   method: 'POST',
   body: new XMLSerializer().serializeToString(featureRequest)
 }).then(function(response) {
   return response.json();
 }).then(function(json) {
-  var features = new ol.format.GeoJSON().readFeatures(json);
+  const features = new GeoJSON().readFeatures(json);
   vectorSource.addFeatures(features);
-  map.getView().fit(vectorSource.getExtent(), /** @type {ol.Size} */ (map.getSize()));
+  map.getView().fit(vectorSource.getExtent());
 });

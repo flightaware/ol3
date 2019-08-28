@@ -1,11 +1,9 @@
-goog.provide('ol.test.LRUCache');
-
-goog.require('ol.structs.LRUCache');
+import LRUCache from '../../../../src/ol/structs/LRUCache.js';
 
 
 describe('ol.structs.LRUCache', function() {
 
-  var lruCache;
+  let lruCache;
 
   function fillLRUCache(lruCache) {
     lruCache.set('a', 0);
@@ -15,7 +13,7 @@ describe('ol.structs.LRUCache', function() {
   }
 
   beforeEach(function() {
-    lruCache = new ol.structs.LRUCache();
+    lruCache = new LRUCache();
   });
 
   describe('empty cache', function() {
@@ -164,6 +162,30 @@ describe('ol.structs.LRUCache', function() {
     });
   });
 
+  describe('#peekFirstKey()', function() {
+    it('returns the newest key in the cache', function() {
+      const cache = new LRUCache();
+      cache.set('oldest', 'oldest');
+      cache.set('oldish', 'oldish');
+      cache.set('newish', 'newish');
+      cache.set('newest', 'newest');
+      expect(cache.peekFirstKey()).to.eql('newest');
+    });
+
+    it('works if the cache has one item', function() {
+      const cache = new LRUCache();
+      cache.set('key', 'value');
+      expect(cache.peekFirstKey()).to.eql('key');
+    });
+
+    it('throws if the cache is empty', function() {
+      const cache = new LRUCache();
+      expect(function() {
+        cache.peekFirstKey();
+      }).to.throwException();
+    });
+  });
+
   describe('peeking at the last value', function() {
     it('returns the last key', function() {
       fillLRUCache(lruCache);
@@ -188,6 +210,66 @@ describe('ol.structs.LRUCache', function() {
     });
   });
 
+  describe('#remove()', function() {
+    it('removes an item from the cache', function() {
+      const cache = new LRUCache();
+      cache.set('oldest', 'oldest');
+      cache.set('oldish', 'oldish');
+      cache.set('newish', 'newish');
+      cache.set('newest', 'newest');
+
+      cache.remove('oldish');
+      expect(cache.getCount()).to.eql(3);
+      expect(cache.getValues()).to.eql(['newest', 'newish', 'oldest']);
+    });
+
+    it('works when removing the oldest item', function() {
+      const cache = new LRUCache();
+      cache.set('oldest', 'oldest');
+      cache.set('oldish', 'oldish');
+      cache.set('newish', 'newish');
+      cache.set('newest', 'newest');
+
+      cache.remove('oldest');
+      expect(cache.getCount()).to.eql(3);
+      expect(cache.peekLastKey()).to.eql('oldish');
+      expect(cache.getValues()).to.eql(['newest', 'newish', 'oldish']);
+    });
+
+    it('works when removing the newest item', function() {
+      const cache = new LRUCache();
+      cache.set('oldest', 'oldest');
+      cache.set('oldish', 'oldish');
+      cache.set('newish', 'newish');
+      cache.set('newest', 'newest');
+
+      cache.remove('newest');
+      expect(cache.getCount()).to.eql(3);
+      expect(cache.peekFirstKey()).to.eql('newish');
+      expect(cache.getValues()).to.eql(['newish', 'oldish', 'oldest']);
+    });
+
+    it('returns the removed item', function() {
+      const cache = new LRUCache();
+      const item = {};
+      cache.set('key', item);
+
+      const returned = cache.remove('key');
+      expect(returned).to.be(item);
+    });
+
+    it('throws if the key does not exist', function() {
+      const cache = new LRUCache();
+      cache.set('foo', 'foo');
+      cache.set('bar', 'bar');
+
+      const call = function() {
+        cache.remove('bam');
+      };
+      expect(call).to.throwException();
+    });
+  });
+
   describe('clearing the cache', function() {
     it('clears the cache', function() {
       fillLRUCache(lruCache);
@@ -195,6 +277,18 @@ describe('ol.structs.LRUCache', function() {
       expect(lruCache.getCount()).to.eql(0);
       expect(lruCache.getKeys()).to.eql([]);
       expect(lruCache.getValues()).to.eql([]);
+    });
+  });
+
+  describe('setting the cache size', function() {
+    it('sets the cache size', function() {
+      lruCache.setSize(2);
+      expect(lruCache.highWaterMark).to.be(2);
+      fillLRUCache(lruCache);
+      while (lruCache.canExpireCache()) {
+        lruCache.pop();
+      }
+      expect(lruCache.getKeys().length).to.be(2);
     });
   });
 

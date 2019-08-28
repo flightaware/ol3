@@ -1,77 +1,66 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.Observable');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.easing');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import {unByKey} from '../src/ol/Observable.js';
+import View from '../src/ol/View.js';
+import {easeOut} from '../src/ol/easing.js';
+import Point from '../src/ol/geom/Point.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Circle as CircleStyle, Stroke, Style} from '../src/ol/style.js';
+import {getVectorContext} from '../src/ol/render.js';
 
-
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM({
-        wrapX: false
-      })
-    })
-  ],
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  target: 'map',
-  view: new ol.View({
-    center: [0, 0],
-    zoom: 1
+const tileLayer = new TileLayer({
+  source: new OSM({
+    wrapX: false
   })
 });
 
-var source = new ol.source.Vector({
+const map = new Map({
+  layers: [tileLayer],
+  target: 'map',
+  view: new View({
+    center: [0, 0],
+    zoom: 1,
+    multiWorld: true
+  })
+});
+
+const source = new VectorSource({
   wrapX: false
 });
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: source
 });
 map.addLayer(vector);
 
 function addRandomFeature() {
-  var x = Math.random() * 360 - 180;
-  var y = Math.random() * 180 - 90;
-  var geom = new ol.geom.Point(ol.proj.transform([x, y],
-      'EPSG:4326', 'EPSG:3857'));
-  var feature = new ol.Feature(geom);
+  const x = Math.random() * 360 - 180;
+  const y = Math.random() * 180 - 90;
+  const geom = new Point(fromLonLat([x, y]));
+  const feature = new Feature(geom);
   source.addFeature(feature);
 }
 
-var duration = 3000;
+const duration = 3000;
 function flash(feature) {
-  var start = new Date().getTime();
-  var listenerKey;
+  const start = new Date().getTime();
+  const listenerKey = tileLayer.on('postrender', animate);
 
   function animate(event) {
-    var vectorContext = event.vectorContext;
-    var frameState = event.frameState;
-    var flashGeom = feature.getGeometry().clone();
-    var elapsed = frameState.time - start;
-    var elapsedRatio = elapsed / duration;
+    const vectorContext = getVectorContext(event);
+    const frameState = event.frameState;
+    const flashGeom = feature.getGeometry().clone();
+    const elapsed = frameState.time - start;
+    const elapsedRatio = elapsed / duration;
     // radius will be 5 at start and 30 at end.
-    var radius = ol.easing.easeOut(elapsedRatio) * 25 + 5;
-    var opacity = ol.easing.easeOut(1 - elapsedRatio);
+    const radius = easeOut(elapsedRatio) * 25 + 5;
+    const opacity = easeOut(1 - elapsedRatio);
 
-    var style = new ol.style.Style({
-      image: new ol.style.Circle({
+    const style = new Style({
+      image: new CircleStyle({
         radius: radius,
-        snapToPixel: false,
-        stroke: new ol.style.Stroke({
+        stroke: new Stroke({
           color: 'rgba(255, 0, 0, ' + opacity + ')',
           width: 0.25 + opacity
         })
@@ -81,13 +70,12 @@ function flash(feature) {
     vectorContext.setStyle(style);
     vectorContext.drawGeometry(flashGeom);
     if (elapsed > duration) {
-      ol.Observable.unByKey(listenerKey);
+      unByKey(listenerKey);
       return;
     }
-    // tell OL3 to continue postcompose animation
+    // tell OpenLayers to continue postrender animation
     map.render();
   }
-  listenerKey = map.on('postcompose', animate);
 }
 
 source.on('addfeature', function(e) {

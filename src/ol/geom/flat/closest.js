@@ -1,37 +1,37 @@
-goog.provide('ol.geom.flat.closest');
-
-goog.require('ol');
-goog.require('ol.math');
+/**
+ * @module ol/geom/flat/closest
+ */
+import {lerp, squaredDistance as squaredDx} from '../../math.js';
 
 
 /**
  * Returns the point on the 2D line segment flatCoordinates[offset1] to
  * flatCoordinates[offset2] that is closest to the point (x, y).  Extra
  * dimensions are linearly interpolated.
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset1 Offset 1.
  * @param {number} offset2 Offset 2.
  * @param {number} stride Stride.
  * @param {number} x X.
  * @param {number} y Y.
- * @param {Array.<number>} closestPoint Closest point.
+ * @param {Array<number>} closestPoint Closest point.
  */
-ol.geom.flat.closest.point = function(flatCoordinates, offset1, offset2, stride, x, y, closestPoint) {
-  var x1 = flatCoordinates[offset1];
-  var y1 = flatCoordinates[offset1 + 1];
-  var dx = flatCoordinates[offset2] - x1;
-  var dy = flatCoordinates[offset2 + 1] - y1;
-  var i, offset;
+function assignClosest(flatCoordinates, offset1, offset2, stride, x, y, closestPoint) {
+  const x1 = flatCoordinates[offset1];
+  const y1 = flatCoordinates[offset1 + 1];
+  const dx = flatCoordinates[offset2] - x1;
+  const dy = flatCoordinates[offset2 + 1] - y1;
+  let offset;
   if (dx === 0 && dy === 0) {
     offset = offset1;
   } else {
-    var t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
+    const t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy);
     if (t > 1) {
       offset = offset2;
     } else if (t > 0) {
-      for (i = 0; i < stride; ++i) {
-        closestPoint[i] = ol.math.lerp(flatCoordinates[offset1 + i],
-            flatCoordinates[offset2 + i], t);
+      for (let i = 0; i < stride; ++i) {
+        closestPoint[i] = lerp(flatCoordinates[offset1 + i],
+          flatCoordinates[offset2 + i], t);
       }
       closestPoint.length = stride;
       return;
@@ -39,82 +39,80 @@ ol.geom.flat.closest.point = function(flatCoordinates, offset1, offset2, stride,
       offset = offset1;
     }
   }
-  for (i = 0; i < stride; ++i) {
+  for (let i = 0; i < stride; ++i) {
     closestPoint[i] = flatCoordinates[offset + i];
   }
   closestPoint.length = stride;
-};
+}
 
 
 /**
  * Return the squared of the largest distance between any pair of consecutive
  * coordinates.
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
  * @param {number} end End.
  * @param {number} stride Stride.
- * @param {number} maxSquaredDelta Max squared delta.
+ * @param {number} max Max squared delta.
  * @return {number} Max squared delta.
  */
-ol.geom.flat.closest.getMaxSquaredDelta = function(flatCoordinates, offset, end, stride, maxSquaredDelta) {
-  var x1 = flatCoordinates[offset];
-  var y1 = flatCoordinates[offset + 1];
+export function maxSquaredDelta(flatCoordinates, offset, end, stride, max) {
+  let x1 = flatCoordinates[offset];
+  let y1 = flatCoordinates[offset + 1];
   for (offset += stride; offset < end; offset += stride) {
-    var x2 = flatCoordinates[offset];
-    var y2 = flatCoordinates[offset + 1];
-    var squaredDelta = ol.math.squaredDistance(x1, y1, x2, y2);
-    if (squaredDelta > maxSquaredDelta) {
-      maxSquaredDelta = squaredDelta;
+    const x2 = flatCoordinates[offset];
+    const y2 = flatCoordinates[offset + 1];
+    const squaredDelta = squaredDx(x1, y1, x2, y2);
+    if (squaredDelta > max) {
+      max = squaredDelta;
     }
     x1 = x2;
     y1 = y2;
   }
-  return maxSquaredDelta;
-};
+  return max;
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
- * @param {Array.<number>} ends Ends.
+ * @param {Array<number>} ends Ends.
  * @param {number} stride Stride.
- * @param {number} maxSquaredDelta Max squared delta.
+ * @param {number} max Max squared delta.
  * @return {number} Max squared delta.
  */
-ol.geom.flat.closest.getsMaxSquaredDelta = function(flatCoordinates, offset, ends, stride, maxSquaredDelta) {
-  var i, ii;
-  for (i = 0, ii = ends.length; i < ii; ++i) {
-    var end = ends[i];
-    maxSquaredDelta = ol.geom.flat.closest.getMaxSquaredDelta(
-        flatCoordinates, offset, end, stride, maxSquaredDelta);
+export function arrayMaxSquaredDelta(flatCoordinates, offset, ends, stride, max) {
+  for (let i = 0, ii = ends.length; i < ii; ++i) {
+    const end = ends[i];
+    max = maxSquaredDelta(
+      flatCoordinates, offset, end, stride, max);
     offset = end;
   }
-  return maxSquaredDelta;
-};
+  return max;
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
- * @param {Array.<Array.<number>>} endss Endss.
+ * @param {Array<Array<number>>} endss Endss.
  * @param {number} stride Stride.
- * @param {number} maxSquaredDelta Max squared delta.
+ * @param {number} max Max squared delta.
  * @return {number} Max squared delta.
  */
-ol.geom.flat.closest.getssMaxSquaredDelta = function(flatCoordinates, offset, endss, stride, maxSquaredDelta) {
-  var i, ii;
-  for (i = 0, ii = endss.length; i < ii; ++i) {
-    var ends = endss[i];
-    maxSquaredDelta = ol.geom.flat.closest.getsMaxSquaredDelta(
-        flatCoordinates, offset, ends, stride, maxSquaredDelta);
+export function multiArrayMaxSquaredDelta(flatCoordinates, offset, endss, stride, max) {
+  for (let i = 0, ii = endss.length; i < ii; ++i) {
+    const ends = endss[i];
+    max = arrayMaxSquaredDelta(
+      flatCoordinates, offset, ends, stride, max);
     offset = ends[ends.length - 1];
   }
-  return maxSquaredDelta;
-};
+  return max;
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
  * @param {number} end End.
  * @param {number} stride Stride.
@@ -122,22 +120,22 @@ ol.geom.flat.closest.getssMaxSquaredDelta = function(flatCoordinates, offset, en
  * @param {boolean} isRing Is ring.
  * @param {number} x X.
  * @param {number} y Y.
- * @param {Array.<number>} closestPoint Closest point.
+ * @param {Array<number>} closestPoint Closest point.
  * @param {number} minSquaredDistance Minimum squared distance.
- * @param {Array.<number>=} opt_tmpPoint Temporary point object.
+ * @param {Array<number>=} opt_tmpPoint Temporary point object.
  * @return {number} Minimum squared distance.
  */
-ol.geom.flat.closest.getClosestPoint = function(flatCoordinates, offset, end,
-    stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
-    opt_tmpPoint) {
+export function assignClosestPoint(flatCoordinates, offset, end,
+  stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
+  opt_tmpPoint) {
   if (offset == end) {
     return minSquaredDistance;
   }
-  var i, squaredDistance;
+  let i, squaredDistance;
   if (maxDelta === 0) {
     // All points are identical, so just test the first point.
-    squaredDistance = ol.math.squaredDistance(
-        x, y, flatCoordinates[offset], flatCoordinates[offset + 1]);
+    squaredDistance = squaredDx(
+      x, y, flatCoordinates[offset], flatCoordinates[offset + 1]);
     if (squaredDistance < minSquaredDistance) {
       for (i = 0; i < stride; ++i) {
         closestPoint[i] = flatCoordinates[offset + i];
@@ -148,13 +146,12 @@ ol.geom.flat.closest.getClosestPoint = function(flatCoordinates, offset, end,
       return minSquaredDistance;
     }
   }
-  ol.DEBUG && console.assert(maxDelta > 0, 'maxDelta should be larger than 0');
-  var tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
-  var index = offset + stride;
+  const tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
+  let index = offset + stride;
   while (index < end) {
-    ol.geom.flat.closest.point(
-        flatCoordinates, index - stride, index, stride, x, y, tmpPoint);
-    squaredDistance = ol.math.squaredDistance(x, y, tmpPoint[0], tmpPoint[1]);
+    assignClosest(
+      flatCoordinates, index - stride, index, stride, x, y, tmpPoint);
+    squaredDistance = squaredDx(x, y, tmpPoint[0], tmpPoint[1]);
     if (squaredDistance < minSquaredDistance) {
       minSquaredDistance = squaredDistance;
       for (i = 0; i < stride; ++i) {
@@ -174,15 +171,15 @@ ol.geom.flat.closest.getClosestPoint = function(flatCoordinates, offset, end,
       // finding a closer point.  We use Math.max(..., 1) to ensure that we
       // always advance at least one point, to avoid an infinite loop.
       index += stride * Math.max(
-          ((Math.sqrt(squaredDistance) -
+        ((Math.sqrt(squaredDistance) -
             Math.sqrt(minSquaredDistance)) / maxDelta) | 0, 1);
     }
   }
   if (isRing) {
     // Check the closing segment.
-    ol.geom.flat.closest.point(
-        flatCoordinates, end - stride, offset, stride, x, y, tmpPoint);
-    squaredDistance = ol.math.squaredDistance(x, y, tmpPoint[0], tmpPoint[1]);
+    assignClosest(
+      flatCoordinates, end - stride, offset, stride, x, y, tmpPoint);
+    squaredDistance = squaredDx(x, y, tmpPoint[0], tmpPoint[1]);
     if (squaredDistance < minSquaredDistance) {
       minSquaredDistance = squaredDistance;
       for (i = 0; i < stride; ++i) {
@@ -192,64 +189,62 @@ ol.geom.flat.closest.getClosestPoint = function(flatCoordinates, offset, end,
     }
   }
   return minSquaredDistance;
-};
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
- * @param {Array.<number>} ends Ends.
+ * @param {Array<number>} ends Ends.
  * @param {number} stride Stride.
  * @param {number} maxDelta Max delta.
  * @param {boolean} isRing Is ring.
  * @param {number} x X.
  * @param {number} y Y.
- * @param {Array.<number>} closestPoint Closest point.
+ * @param {Array<number>} closestPoint Closest point.
  * @param {number} minSquaredDistance Minimum squared distance.
- * @param {Array.<number>=} opt_tmpPoint Temporary point object.
+ * @param {Array<number>=} opt_tmpPoint Temporary point object.
  * @return {number} Minimum squared distance.
  */
-ol.geom.flat.closest.getsClosestPoint = function(flatCoordinates, offset, ends,
-    stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
-    opt_tmpPoint) {
-  var tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
-  var i, ii;
-  for (i = 0, ii = ends.length; i < ii; ++i) {
-    var end = ends[i];
-    minSquaredDistance = ol.geom.flat.closest.getClosestPoint(
-        flatCoordinates, offset, end, stride,
-        maxDelta, isRing, x, y, closestPoint, minSquaredDistance, tmpPoint);
+export function assignClosestArrayPoint(flatCoordinates, offset, ends,
+  stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
+  opt_tmpPoint) {
+  const tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
+  for (let i = 0, ii = ends.length; i < ii; ++i) {
+    const end = ends[i];
+    minSquaredDistance = assignClosestPoint(
+      flatCoordinates, offset, end, stride,
+      maxDelta, isRing, x, y, closestPoint, minSquaredDistance, tmpPoint);
     offset = end;
   }
   return minSquaredDistance;
-};
+}
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
- * @param {Array.<Array.<number>>} endss Endss.
+ * @param {Array<Array<number>>} endss Endss.
  * @param {number} stride Stride.
  * @param {number} maxDelta Max delta.
  * @param {boolean} isRing Is ring.
  * @param {number} x X.
  * @param {number} y Y.
- * @param {Array.<number>} closestPoint Closest point.
+ * @param {Array<number>} closestPoint Closest point.
  * @param {number} minSquaredDistance Minimum squared distance.
- * @param {Array.<number>=} opt_tmpPoint Temporary point object.
+ * @param {Array<number>=} opt_tmpPoint Temporary point object.
  * @return {number} Minimum squared distance.
  */
-ol.geom.flat.closest.getssClosestPoint = function(flatCoordinates, offset,
-    endss, stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
-    opt_tmpPoint) {
-  var tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
-  var i, ii;
-  for (i = 0, ii = endss.length; i < ii; ++i) {
-    var ends = endss[i];
-    minSquaredDistance = ol.geom.flat.closest.getsClosestPoint(
-        flatCoordinates, offset, ends, stride,
-        maxDelta, isRing, x, y, closestPoint, minSquaredDistance, tmpPoint);
+export function assignClosestMultiArrayPoint(flatCoordinates, offset,
+  endss, stride, maxDelta, isRing, x, y, closestPoint, minSquaredDistance,
+  opt_tmpPoint) {
+  const tmpPoint = opt_tmpPoint ? opt_tmpPoint : [NaN, NaN];
+  for (let i = 0, ii = endss.length; i < ii; ++i) {
+    const ends = endss[i];
+    minSquaredDistance = assignClosestArrayPoint(
+      flatCoordinates, offset, ends, stride,
+      maxDelta, isRing, x, y, closestPoint, minSquaredDistance, tmpPoint);
     offset = ends[ends.length - 1];
   }
   return minSquaredDistance;
-};
+}

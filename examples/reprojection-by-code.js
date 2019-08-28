@@ -1,20 +1,22 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.extent');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.TileImage');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {applyTransform} from '../src/ol/extent.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {get as getProjection, getTransform} from '../src/ol/proj.js';
+import {register} from '../src/ol/proj/proj4.js';
+import OSM from '../src/ol/source/OSM.js';
+import TileImage from '../src/ol/source/TileImage.js';
+import proj4 from 'proj4';
 
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     projection: 'EPSG:3857',
     center: [0, 0],
     zoom: 1
@@ -22,15 +24,15 @@ var map = new ol.Map({
 });
 
 
-var queryInput = document.getElementById('epsg-query');
-var searchButton = document.getElementById('epsg-search');
-var resultSpan = document.getElementById('epsg-result');
-var renderEdgesCheckbox = document.getElementById('render-edges');
+const queryInput = document.getElementById('epsg-query');
+const searchButton = document.getElementById('epsg-search');
+const resultSpan = document.getElementById('epsg-result');
+const renderEdgesCheckbox = document.getElementById('render-edges');
 
 function setProjection(code, name, proj4def, bbox) {
   if (code === null || name === null || proj4def === null || bbox === null) {
     resultSpan.innerHTML = 'Nothing usable found, using EPSG:3857...';
-    map.setView(new ol.View({
+    map.setView(new View({
       projection: 'EPSG:3857',
       center: [0, 0],
       zoom: 1
@@ -40,39 +42,38 @@ function setProjection(code, name, proj4def, bbox) {
 
   resultSpan.innerHTML = '(' + code + ') ' + name;
 
-  var newProjCode = 'EPSG:' + code;
+  const newProjCode = 'EPSG:' + code;
   proj4.defs(newProjCode, proj4def);
-  var newProj = ol.proj.get(newProjCode);
-  var fromLonLat = ol.proj.getTransform('EPSG:4326', newProj);
+  register(proj4);
+  const newProj = getProjection(newProjCode);
+  const fromLonLat = getTransform('EPSG:4326', newProj);
 
   // very approximate calculation of projection extent
-  var extent = ol.extent.applyTransform(
-      [bbox[1], bbox[2], bbox[3], bbox[0]], fromLonLat);
+  const extent = applyTransform(
+    [bbox[1], bbox[2], bbox[3], bbox[0]], fromLonLat);
   newProj.setExtent(extent);
-  var newView = new ol.View({
+  const newView = new View({
     projection: newProj
   });
   map.setView(newView);
-
-  var size = map.getSize();
-  if (size) {
-    newView.fit(extent, size);
-  }
+  newView.fit(extent);
 }
 
 
 function search(query) {
   resultSpan.innerHTML = 'Searching ...';
-  fetch('http://epsg.io/?format=json&q=' + query).then(function(response) {
+  fetch('https://epsg.io/?format=json&q=' + query).then(function(response) {
     return response.json();
   }).then(function(json) {
-    var results = json['results'];
+    const results = json['results'];
     if (results && results.length > 0) {
-      for (var i = 0, ii = results.length; i < ii; i++) {
-        var result = results[i];
+      for (let i = 0, ii = results.length; i < ii; i++) {
+        const result = results[i];
         if (result) {
-          var code = result['code'], name = result['name'],
-              proj4def = result['proj4'], bbox = result['bbox'];
+          const code = result['code'];
+          const name = result['name'];
+          const proj4def = result['proj4'];
+          const bbox = result['bbox'];
           if (code && code.length > 0 && proj4def && proj4def.length > 0 &&
               bbox && bbox.length == 4) {
             setProjection(code, name, proj4def, bbox);
@@ -101,9 +102,9 @@ searchButton.onclick = function(event) {
  */
 renderEdgesCheckbox.onchange = function() {
   map.getLayers().forEach(function(layer) {
-    if (layer instanceof ol.layer.Tile) {
-      var source = layer.getSource();
-      if (source instanceof ol.source.TileImage) {
+    if (layer instanceof TileLayer) {
+      const source = layer.getSource();
+      if (source instanceof TileImage) {
         source.setRenderReprojectionEdges(renderEdgesCheckbox.checked);
       }
     }

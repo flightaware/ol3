@@ -1,45 +1,44 @@
-// NOCOMPILE
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Image');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Raster');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {Image as ImageLayer, Tile as TileLayer} from '../src/ol/layer.js';
+import {fromLonLat} from '../src/ol/proj.js';
+import BingMaps from '../src/ol/source/BingMaps.js';
+import RasterSource from '../src/ol/source/Raster.js';
 
 function growRegion(inputs, data) {
-  var image = inputs[0];
-  var seed = data.pixel;
-  var delta = parseInt(data.delta);
+  const image = inputs[0];
+  let seed = data.pixel;
+  const delta = parseInt(data.delta);
   if (!seed) {
     return image;
   }
 
   seed = seed.map(Math.round);
-  var width = image.width;
-  var height = image.height;
-  var inputData = image.data;
-  var outputData = new Uint8ClampedArray(inputData);
-  var seedIdx = (seed[1] * width + seed[0]) * 4;
-  var seedR = inputData[seedIdx];
-  var seedG = inputData[seedIdx + 1];
-  var seedB = inputData[seedIdx + 2];
-  var edge = [seed];
+  const width = image.width;
+  const height = image.height;
+  const inputData = image.data;
+  const outputData = new Uint8ClampedArray(inputData);
+  const seedIdx = (seed[1] * width + seed[0]) * 4;
+  const seedR = inputData[seedIdx];
+  const seedG = inputData[seedIdx + 1];
+  const seedB = inputData[seedIdx + 2];
+  let edge = [seed];
   while (edge.length) {
-    var newedge = [];
-    for (var i = 0, ii = edge.length; i < ii; i++) {
+    const newedge = [];
+    for (let i = 0, ii = edge.length; i < ii; i++) {
       // As noted in the Raster source constructor, this function is provided
       // using the `lib` option. Other functions will NOT be visible unless
       // provided using the `lib` option.
-      var next = next4Edges(edge[i]);
-      for (var j = 0, jj = next.length; j < jj; j++) {
-        var s = next[j][0], t = next[j][1];
+      const next = next4Edges(edge[i]);
+      for (let j = 0, jj = next.length; j < jj; j++) {
+        const s = next[j][0];
+        const t = next[j][1];
         if (s >= 0 && s < width && t >= 0 && t < height) {
-          var ci = (t * width + s) * 4;
-          var cr = inputData[ci];
-          var cg = inputData[ci + 1];
-          var cb = inputData[ci + 2];
-          var ca = inputData[ci + 3];
+          const ci = (t * width + s) * 4;
+          const cr = inputData[ci];
+          const cg = inputData[ci + 1];
+          const cb = inputData[ci + 2];
+          const ca = inputData[ci + 3];
           // if alpha is zero, carry on
           if (ca === 0) {
             continue;
@@ -63,7 +62,8 @@ function growRegion(inputs, data) {
 }
 
 function next4Edges(edge) {
-  var x = edge[0], y = edge[1];
+  const x = edge[0];
+  const y = edge[1];
   return [
     [x + 1, y],
     [x - 1, y],
@@ -72,13 +72,13 @@ function next4Edges(edge) {
   ];
 }
 
-var key = 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF';
+const key = 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5';
 
-var imagery = new ol.layer.Tile({
-  source: new ol.source.BingMaps({key: key, imagerySet: 'Aerial'})
+const imagery = new TileLayer({
+  source: new BingMaps({key: key, imagerySet: 'Aerial'})
 });
 
-var raster = new ol.source.Raster({
+const raster = new RasterSource({
   sources: [imagery.getSource()],
   operationType: 'image',
   operation: growRegion,
@@ -89,32 +89,32 @@ var raster = new ol.source.Raster({
   }
 });
 
-var rasterImage = new ol.layer.Image({
+const rasterImage = new ImageLayer({
   opacity: 0.7,
   source: raster
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [imagery, rasterImage],
   target: 'map',
-  view: new ol.View({
-    center: ol.proj.fromLonLat([-119.07, 47.65]),
+  view: new View({
+    center: fromLonLat([-119.07, 47.65]),
     zoom: 11
   })
 });
 
-var coordinate;
+let coordinate;
 
 map.on('click', function(event) {
   coordinate = event.coordinate;
   raster.changed();
 });
 
-var thresholdControl = document.getElementById('threshold');
+const thresholdControl = document.getElementById('threshold');
 
 raster.on('beforeoperations', function(event) {
   // the event.data object will be passed to operations
-  var data = event.data;
+  const data = event.data;
   data.delta = thresholdControl.value;
   if (coordinate) {
     data.pixel = map.getPixelFromCoordinate(coordinate);

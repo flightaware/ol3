@@ -1,30 +1,27 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Fill');
-goog.require('ol.style.RegularShape');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import VectorLayer from '../src/ol/layer/Vector.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Fill, RegularShape, Stroke, Style} from '../src/ol/style.js';
 
 
-var stroke = new ol.style.Stroke({color: 'black', width: 1});
+const stroke = new Stroke({color: 'black', width: 1});
 
-var styles = {
-  'square': new ol.style.Style({
-    image: new ol.style.RegularShape({
-      fill: new ol.style.Fill({color: 'blue'}),
+const styles = {
+  'square': new Style({
+    image: new RegularShape({
+      fill: new Fill({color: 'blue'}),
       stroke: stroke,
       points: 4,
       radius: 80,
       angle: Math.PI / 4
     })
   }),
-  'triangle': new ol.style.Style({
-    image: new ol.style.RegularShape({
-      fill: new ol.style.Fill({color: 'red'}),
+  'triangle': new Style({
+    image: new RegularShape({
+      fill: new Fill({color: 'red'}),
       stroke: stroke,
       points: 3,
       radius: 80,
@@ -32,9 +29,9 @@ var styles = {
       angle: 0
     })
   }),
-  'star': new ol.style.Style({
-    image: new ol.style.RegularShape({
-      fill: new ol.style.Fill({color: 'green'}),
+  'star': new Style({
+    image: new RegularShape({
+      fill: new Fill({color: 'green'}),
       stroke: stroke,
       points: 5,
       radius: 80,
@@ -46,14 +43,14 @@ var styles = {
 
 
 function createLayer(coordinates, style, zIndex) {
-  var feature = new ol.Feature(new ol.geom.Point(coordinates));
+  const feature = new Feature(new Point(coordinates));
   feature.setStyle(style);
 
-  var source = new ol.source.Vector({
+  const source = new VectorSource({
     features: [feature]
   });
 
-  var vectorLayer = new ol.layer.Vector({
+  const vectorLayer = new VectorLayer({
     source: source
   });
   vectorLayer.setZIndex(zIndex);
@@ -61,18 +58,18 @@ function createLayer(coordinates, style, zIndex) {
   return vectorLayer;
 }
 
-var layer0 = createLayer([40, 40], styles['star'], 0);
-var layer1 = createLayer([0, 0], styles['square'], 1);
-var layer2 = createLayer([0, 40], styles['triangle'], 0);
+const layer0 = createLayer([40, 40], styles['star'], 0);
+const layer1 = createLayer([0, 0], styles['square'], 1);
+const layer2 = createLayer([0, 40], styles['triangle'], 0);
 
-var layers = [];
+const layers = [];
 layers.push(layer1);
 layers.push(layer2);
 
-var map = new ol.Map({
+const map = new Map({
   layers: layers,
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 18
   })
@@ -82,7 +79,7 @@ layer0.setMap(map);
 
 
 function bindInputs(id, layer) {
-  var idxInput = document.getElementById('idx' + id);
+  const idxInput = document.getElementById('idx' + id);
   idxInput.onchange = function() {
     layer.setZIndex(parseInt(this.value, 10) || 0);
   };

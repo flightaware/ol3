@@ -1,39 +1,37 @@
-goog.provide('ol.test.geom.GeometryCollection');
-
-goog.require('ol.geom.Geometry');
-goog.require('ol.geom.GeometryCollection');
-goog.require('ol.geom.LineString');
-goog.require('ol.geom.Point');
-goog.require('ol.geom.Polygon');
+import Geometry from '../../../../src/ol/geom/Geometry.js';
+import GeometryCollection from '../../../../src/ol/geom/GeometryCollection.js';
+import LineString from '../../../../src/ol/geom/LineString.js';
+import Point from '../../../../src/ol/geom/Point.js';
+import Polygon from '../../../../src/ol/geom/Polygon.js';
 
 describe('ol.geom.GeometryCollection', function() {
 
-  var outer = [[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]];
-  var inner1 = [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]];
-  var inner2 = [[8, 8], [9, 8], [9, 9], [8, 9], [8, 8]];
+  const outer = [[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]];
+  const inner1 = [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]];
+  const inner2 = [[8, 8], [9, 8], [9, 9], [8, 9], [8, 8]];
 
   describe('constructor', function() {
 
-    var line, multi, point, poly;
+    let line, multi, point, poly;
     beforeEach(function() {
-      point = new ol.geom.Point([10, 20]);
-      line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      poly = new ol.geom.Polygon([outer, inner1, inner2]);
-      multi = new ol.geom.GeometryCollection([point, line, poly]);
+      point = new Point([10, 20]);
+      line = new LineString([[10, 20], [30, 40]]);
+      poly = new Polygon([outer, inner1, inner2]);
+      multi = new GeometryCollection([point, line, poly]);
     });
 
     it('creates a geometry collection from an array of geometries', function() {
-      expect(multi).to.be.a(ol.geom.GeometryCollection);
-      expect(multi).to.be.a(ol.geom.Geometry);
+      expect(multi).to.be.a(GeometryCollection);
+      expect(multi).to.be.a(Geometry);
     });
 
     it('fires a change event when one of its component changes',
-        function(done) {
-          multi.on('change', function() {
-            done();
-          });
-          point.setCoordinates([10, 10]);
-        }
+      function(done) {
+        multi.on('change', function() {
+          done();
+        });
+        point.setCoordinates([10, 10]);
+      }
     );
 
     it('deregister old components', function() {
@@ -45,7 +43,7 @@ describe('ol.geom.GeometryCollection', function() {
     });
 
     it('register new components', function(done) {
-      var point2 = new ol.geom.Point([10, 20]);
+      const point2 = new Point([10, 20]);
       multi.setGeometriesArray([point2]);
       multi.on('change', function() {
         done();
@@ -58,17 +56,17 @@ describe('ol.geom.GeometryCollection', function() {
   describe('#getGeometries', function() {
 
     it('returns a collection of geometries', function() {
-      var point = new ol.geom.Point([10, 20]);
-      var line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      var poly = new ol.geom.Polygon([outer, inner1, inner2]);
-      var multi = new ol.geom.GeometryCollection([point, line, poly]);
+      const point = new Point([10, 20]);
+      const line = new LineString([[10, 20], [30, 40]]);
+      const poly = new Polygon([outer, inner1, inner2]);
+      const multi = new GeometryCollection([point, line, poly]);
 
-      var geometries = multi.getGeometries();
+      const geometries = multi.getGeometries();
       expect(geometries).to.be.an(Array);
       expect(geometries).to.have.length(3);
-      expect(geometries[0]).to.be.a(ol.geom.Point);
-      expect(geometries[1]).to.be.a(ol.geom.LineString);
-      expect(geometries[2]).to.be.a(ol.geom.Polygon);
+      expect(geometries[0]).to.be.a(Point);
+      expect(geometries[1]).to.be.a(LineString);
+      expect(geometries[2]).to.be.a(Polygon);
     });
 
   });
@@ -76,30 +74,30 @@ describe('ol.geom.GeometryCollection', function() {
   describe('#clone()', function() {
 
     it('has a working clone method', function() {
-      var point = new ol.geom.Point([10, 20]);
-      var line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      var poly = new ol.geom.Polygon([outer, inner1, inner2]);
-      var multi = new ol.geom.GeometryCollection([point, line, poly]);
-      var clone = multi.clone();
+      const point = new Point([10, 20]);
+      const line = new LineString([[10, 20], [30, 40]]);
+      const poly = new Polygon([outer, inner1, inner2]);
+      const multi = new GeometryCollection([point, line, poly]);
+      const clone = multi.clone();
       expect(clone).to.not.be(multi);
-      var geometries = clone.getGeometries();
+      const geometries = clone.getGeometries();
       expect(geometries[0].getCoordinates()).to.eql([10, 20]);
       expect(geometries[1].getCoordinates()).to.eql([[10, 20], [30, 40]]);
       expect(geometries[2].getCoordinates()).to.eql([outer, inner1, inner2]);
     });
 
     it('does a deep clone', function() {
-      var point = new ol.geom.Point([30, 40]);
-      var originalGeometries = [point];
-      var multi = new ol.geom.GeometryCollection(originalGeometries);
-      var clone = multi.clone();
-      var clonedGeometries = clone.getGeometries();
+      const point = new Point([30, 40]);
+      const originalGeometries = [point];
+      const multi = new GeometryCollection(originalGeometries);
+      const clone = multi.clone();
+      const clonedGeometries = clone.getGeometries();
       expect(clonedGeometries).not.to.be(originalGeometries);
       expect(clonedGeometries).to.have.length(originalGeometries.length);
       expect(clonedGeometries).to.have.length(1);
       expect(clonedGeometries[0]).not.to.be(originalGeometries[0]);
       expect(clonedGeometries[0].getCoordinates()).
-          to.eql(originalGeometries[0].getCoordinates());
+        to.eql(originalGeometries[0].getCoordinates());
     });
 
   });
@@ -107,10 +105,10 @@ describe('ol.geom.GeometryCollection', function() {
   describe('#getExtent()', function() {
 
     it('returns the bounding extent', function() {
-      var point = new ol.geom.Point([10, 2]);
-      var line = new ol.geom.LineString([[1, 20], [30, 40]]);
-      var multi = new ol.geom.GeometryCollection([point, line]);
-      var extent = multi.getExtent();
+      const point = new Point([10, 2]);
+      const line = new LineString([[1, 20], [30, 40]]);
+      const multi = new GeometryCollection([point, line]);
+      const extent = multi.getExtent();
       expect(extent[0]).to.be(1);
       expect(extent[2]).to.be(30);
       expect(extent[1]).to.be(2);
@@ -121,13 +119,13 @@ describe('ol.geom.GeometryCollection', function() {
 
   describe('#intersectsExtent()', function() {
 
-    var point, line, poly, multi;
+    let point, line, poly, multi;
 
     beforeEach(function() {
-      point = new ol.geom.Point([5, 20]);
-      line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      poly = new ol.geom.Polygon([outer, inner1, inner2]);
-      multi = new ol.geom.GeometryCollection([point, line, poly]);
+      point = new Point([5, 20]);
+      line = new LineString([[10, 20], [30, 40]]);
+      poly = new Polygon([outer, inner1, inner2]);
+      multi = new GeometryCollection([point, line, poly]);
     });
 
     it('returns true for intersecting point', function() {
@@ -143,7 +141,7 @@ describe('ol.geom.GeometryCollection', function() {
     });
 
     it('returns false for non-matching extent within own extent', function() {
-      var extent = [0, 35, 5, 40];
+      const extent = [0, 35, 5, 40];
       expect(poly.intersectsExtent(extent)).to.be(false);
     });
 
@@ -151,16 +149,16 @@ describe('ol.geom.GeometryCollection', function() {
 
   describe('#setGeometries', function() {
 
-    var line, multi, point, poly;
+    let line, multi, point, poly;
     beforeEach(function() {
-      point = new ol.geom.Point([10, 20]);
-      line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      poly = new ol.geom.Polygon([outer, inner1, inner2]);
-      multi = new ol.geom.GeometryCollection([point, line, poly]);
+      point = new Point([10, 20]);
+      line = new LineString([[10, 20], [30, 40]]);
+      poly = new Polygon([outer, inner1, inner2]);
+      multi = new GeometryCollection([point, line, poly]);
     });
 
     it('fires a change event', function() {
-      var listener = sinon.spy();
+      const listener = sinon.spy();
       multi.on('change', listener);
       multi.setGeometries([point, line, poly]);
       expect(listener.calledOnce).to.be(true);
@@ -177,34 +175,34 @@ describe('ol.geom.GeometryCollection', function() {
   describe('#scale()', function() {
 
     it('scales a collection', function() {
-      var geom = new ol.geom.GeometryCollection([
-        new ol.geom.Point([-1, -2]),
-        new ol.geom.LineString([[0, 0], [1, 2]])
+      const geom = new GeometryCollection([
+        new Point([-1, -2]),
+        new LineString([[0, 0], [1, 2]])
       ]);
       geom.scale(10);
-      var geometries = geom.getGeometries();
+      const geometries = geom.getGeometries();
       expect(geometries[0].getCoordinates()).to.eql([-10, -20]);
       expect(geometries[1].getCoordinates()).to.eql([[0, 0], [10, 20]]);
     });
 
     it('accepts sx and sy', function() {
-      var geom = new ol.geom.GeometryCollection([
-        new ol.geom.Point([-1, -2]),
-        new ol.geom.LineString([[0, 0], [1, 2]])
+      const geom = new GeometryCollection([
+        new Point([-1, -2]),
+        new LineString([[0, 0], [1, 2]])
       ]);
       geom.scale(2, 3);
-      var geometries = geom.getGeometries();
+      const geometries = geom.getGeometries();
       expect(geometries[0].getCoordinates()).to.eql([-2, -6]);
       expect(geometries[1].getCoordinates()).to.eql([[0, 0], [2, 6]]);
     });
 
     it('accepts an anchor', function() {
-      var geom = new ol.geom.GeometryCollection([
-        new ol.geom.Point([-1, -2]),
-        new ol.geom.LineString([[0, 0], [1, 2]])
+      const geom = new GeometryCollection([
+        new Point([-1, -2]),
+        new LineString([[0, 0], [1, 2]])
       ]);
       geom.scale(10, 15, [-1, -2]);
-      var geometries = geom.getGeometries();
+      const geometries = geom.getGeometries();
       expect(geometries[0].getCoordinates()).to.eql([-1, -2]);
       expect(geometries[1].getCoordinates()).to.eql([[9, 28], [19, 58]]);
     });
@@ -213,21 +211,21 @@ describe('ol.geom.GeometryCollection', function() {
 
   describe('#transform()', function() {
 
-    var line, multi, point;
+    let line, multi, point;
     beforeEach(function() {
-      point = new ol.geom.Point([10, 20]);
-      line = new ol.geom.LineString([[10, 20], [30, 40]]);
-      multi = new ol.geom.GeometryCollection([point, line]);
+      point = new Point([10, 20]);
+      line = new LineString([[10, 20], [30, 40]]);
+      multi = new GeometryCollection([point, line]);
     });
 
     it('transforms all geometries', function() {
       multi.transform('EPSG:4326', 'EPSG:3857');
 
-      var geometries = multi.getGeometries();
-      expect(geometries[0]).to.be.a(ol.geom.Point);
-      expect(geometries[1]).to.be.a(ol.geom.LineString);
+      const geometries = multi.getGeometries();
+      expect(geometries[0]).to.be.a(Point);
+      expect(geometries[1]).to.be.a(LineString);
 
-      var coords = geometries[0].getCoordinates();
+      let coords = geometries[0].getCoordinates();
       expect(coords[0]).to.roughlyEqual(1113194.90, 1e-2);
       expect(coords[1]).to.roughlyEqual(2273030.92, 1e-2);
 

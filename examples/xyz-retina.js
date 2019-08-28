@@ -1,23 +1,23 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.XYZ');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {transform, transformExtent} from '../src/ol/proj.js';
+import OSM from '../src/ol/source/OSM.js';
+import XYZ from '../src/ol/source/XYZ.js';
 
-var mapMinZoom = 1;
-var mapMaxZoom = 15;
-var mapExtent = [-112.261791, 35.983744, -112.113981, 36.132062];
+const mapMinZoom = 1;
+const mapMaxZoom = 15;
+const mapExtent = [-112.261791, 35.983744, -112.113981, 36.132062];
 
-var map = new ol.Map({
+const map = new Map({
   target: 'map',
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     }),
-    new ol.layer.Tile({
-      extent: ol.proj.transformExtent(mapExtent, 'EPSG:4326', 'EPSG:3857'),
-      source: new ol.source.XYZ({
+    new TileLayer({
+      extent: transformExtent(mapExtent, 'EPSG:4326', 'EPSG:3857'),
+      source: new XYZ({
         attributions: 'Tiles © USGS, rendered with ' +
             '<a href="http://www.maptiler.com/">MapTiler</a>',
         url: 'https://tileserver.maptiler.com/grandcanyon@2x/{z}/{x}/{y}.png',
@@ -27,10 +27,10 @@ var map = new ol.Map({
       })
     })
   ],
-  view: new ol.View({
+  view: new View({
     projection: 'EPSG:3857',
-    center: ol.proj.transform([-112.18688965, 36.057944835],
-        'EPSG:4326', 'EPSG:3857'),
+    center: transform([-112.18688965, 36.057944835],
+      'EPSG:4326', 'EPSG:3857'),
     zoom: 12
   })
 });

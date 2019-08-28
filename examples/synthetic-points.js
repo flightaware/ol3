@@ -1,82 +1,79 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.LineString');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {LineString, Point} from '../src/ol/geom.js';
+import VectorLayer from '../src/ol/layer/Vector.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
+import {getVectorContext} from '../src/ol/render.js';
 
 
-var count = 20000;
-var features = new Array(count);
-var e = 18000000;
-for (var i = 0; i < count; ++i) {
-  features[i] = new ol.Feature({
-    'geometry': new ol.geom.Point(
-        [2 * e * Math.random() - e, 2 * e * Math.random() - e]),
+const count = 20000;
+const features = new Array(count);
+const e = 18000000;
+for (let i = 0; i < count; ++i) {
+  features[i] = new Feature({
+    'geometry': new Point(
+      [2 * e * Math.random() - e, 2 * e * Math.random() - e]),
     'i': i,
     'size': i % 2 ? 10 : 20
   });
 }
 
-var styles = {
-  '10': new ol.style.Style({
-    image: new ol.style.Circle({
+const styles = {
+  '10': new Style({
+    image: new CircleStyle({
       radius: 5,
-      fill: new ol.style.Fill({color: '#666666'}),
-      stroke: new ol.style.Stroke({color: '#bada55', width: 1})
+      fill: new Fill({color: '#666666'}),
+      stroke: new Stroke({color: '#bada55', width: 1})
     })
   }),
-  '20': new ol.style.Style({
-    image: new ol.style.Circle({
+  '20': new Style({
+    image: new CircleStyle({
       radius: 10,
-      fill: new ol.style.Fill({color: '#666666'}),
-      stroke: new ol.style.Stroke({color: '#bada55', width: 1})
+      fill: new Fill({color: '#666666'}),
+      stroke: new Stroke({color: '#bada55', width: 1})
     })
   })
 };
 
-var vectorSource = new ol.source.Vector({
+const vectorSource = new VectorSource({
   features: features,
   wrapX: false
 });
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: vectorSource,
   style: function(feature) {
     return styles[feature.get('size')];
   }
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [vector],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
-var point = null;
-var line = null;
-var displaySnap = function(coordinate) {
-  var closestFeature = vectorSource.getClosestFeatureToCoordinate(coordinate);
+let point = null;
+let line = null;
+const displaySnap = function(coordinate) {
+  const closestFeature = vectorSource.getClosestFeatureToCoordinate(coordinate);
   if (closestFeature === null) {
     point = null;
     line = null;
   } else {
-    var geometry = closestFeature.getGeometry();
-    var closestPoint = geometry.getClosestPoint(coordinate);
+    const geometry = closestFeature.getGeometry();
+    const closestPoint = geometry.getClosestPoint(coordinate);
     if (point === null) {
-      point = new ol.geom.Point(closestPoint);
+      point = new Point(closestPoint);
     } else {
       point.setCoordinates(closestPoint);
     }
     if (line === null) {
-      line = new ol.geom.LineString([coordinate, closestPoint]);
+      line = new LineString([coordinate, closestPoint]);
     } else {
       line.setCoordinates([coordinate, closestPoint]);
     }
@@ -88,7 +85,7 @@ map.on('pointermove', function(evt) {
   if (evt.dragging) {
     return;
   }
-  var coordinate = map.getEventCoordinate(evt.originalEvent);
+  const coordinate = map.getEventCoordinate(evt.originalEvent);
   displaySnap(coordinate);
 });
 
@@ -96,20 +93,20 @@ map.on('click', function(evt) {
   displaySnap(evt.coordinate);
 });
 
-var stroke = new ol.style.Stroke({
+const stroke = new Stroke({
   color: 'rgba(255,255,0,0.9)',
   width: 3
 });
-var style = new ol.style.Style({
+const style = new Style({
   stroke: stroke,
-  image: new ol.style.Circle({
+  image: new CircleStyle({
     radius: 10,
     stroke: stroke
   })
 });
 
-map.on('postcompose', function(evt) {
-  var vectorContext = evt.vectorContext;
+vector.on('postrender', function(evt) {
+  const vectorContext = getVectorContext(evt);
   vectorContext.setStyle(style);
   if (point !== null) {
     vectorContext.drawGeometry(point);
@@ -123,8 +120,8 @@ map.on('pointermove', function(evt) {
   if (evt.dragging) {
     return;
   }
-  var pixel = map.getEventPixel(evt.originalEvent);
-  var hit = map.hasFeatureAtPixel(pixel);
+  const pixel = map.getEventPixel(evt.originalEvent);
+  const hit = map.hasFeatureAtPixel(pixel);
   if (hit) {
     map.getTarget().style.cursor = 'pointer';
   } else {

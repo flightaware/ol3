@@ -1,42 +1,31 @@
-/* eslint-disable openlayers-internal/no-unused-requires */
-
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.MVT');
-goog.require('ol.layer.VectorTile');
-goog.require('ol.source.VectorTile');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Icon');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
-goog.require('ol.style.Text');
-goog.require('ol.tilegrid');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import MVT from '../src/ol/format/MVT.js';
+import VectorTileLayer from '../src/ol/layer/VectorTile.js';
+import VectorTileSource from '../src/ol/source/VectorTile.js';
+import {Fill, Icon, Stroke, Style, Text} from '../src/ol/style.js';
 
 
-var key = 'pk.eyJ1IjoiYWhvY2V2YXIiLCJhIjoiRk1kMWZaSSJ9.E5BkluenyWQMsBLsuByrmg';
+const key = 'pk.eyJ1IjoiYWhvY2V2YXIiLCJhIjoiY2pzbmg0Nmk5MGF5NzQzbzRnbDNoeHJrbiJ9.7_-_gL8ur7ZtEiNwRfCy7Q';
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.VectorTile({
-      source: new ol.source.VectorTile({
+    new VectorTileLayer({
+      declutter: true,
+      source: new VectorTileSource({
         attributions: '© <a href="https://www.mapbox.com/map-feedback/">Mapbox</a> ' +
-          '© <a href="http://www.openstreetmap.org/copyright">' +
+          '© <a href="https://www.openstreetmap.org/copyright">' +
           'OpenStreetMap contributors</a>',
-        format: new ol.format.MVT(),
-        tileGrid: ol.tilegrid.createXYZ({maxZoom: 22}),
-        tilePixelRatio: 16,
+        format: new MVT(),
         url: 'https://{a-d}.tiles.mapbox.com/v4/mapbox.mapbox-streets-v6/' +
             '{z}/{x}/{y}.vector.pbf?access_token=' + key
       }),
-      style: createMapboxStreetsV6Style()
+      style: createMapboxStreetsV6Style(Style, Fill, Stroke, Icon, Text)
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
-
-// ol.style.Fill, ol.style.Icon, ol.style.Stroke, ol.style.Style and
-// ol.style.Text are required for createMapboxStreetsV6Style()

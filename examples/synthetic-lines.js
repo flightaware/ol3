@@ -1,25 +1,24 @@
-goog.require('ol.Feature');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.geom.LineString');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import LineString from '../src/ol/geom/LineString.js';
+import VectorLayer from '../src/ol/layer/Vector.js';
+import VectorSource from '../src/ol/source/Vector.js';
+import {Stroke, Style} from '../src/ol/style.js';
 
 
-var count = 10000;
-var features = new Array(count);
+const count = 10000;
+const features = new Array(count);
 
-var startPoint = [0, 0];
-var endPoint;
+let startPoint = [0, 0];
+let endPoint;
 
-var delta, deltaX, deltaY;
-var signX = 1;
-var signY = -1;
+let delta, deltaX, deltaY;
+let signX = 1;
+let signY = -1;
 
 // Create a square spiral.
-var i;
+let i;
 for (i = 0; i < count; ++i) {
   delta = (i + 1) * 2500;
   if (i % 2 === 0) {
@@ -30,31 +29,31 @@ for (i = 0; i < count; ++i) {
   deltaX = delta * signX;
   deltaY = delta * signY;
   endPoint = [startPoint[0] + deltaX, startPoint[1] + deltaY];
-  features[i] = new ol.Feature({
-    'geometry': new ol.geom.LineString([startPoint, endPoint])
+  features[i] = new Feature({
+    'geometry': new LineString([startPoint, endPoint])
   });
   startPoint = endPoint;
 }
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vector = new VectorLayer({
+  source: new VectorSource({
     features: features,
     wrapX: false
   }),
-  style: new ol.style.Style({
-    stroke: new ol.style.Stroke({
+  style: new Style({
+    stroke: new Stroke({
       color: '#666666',
       width: 1
     })
   })
 });
 
-var view = new ol.View({
+const view = new View({
   center: [0, 0],
   zoom: 0
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [vector],
   target: 'map',
   view: view

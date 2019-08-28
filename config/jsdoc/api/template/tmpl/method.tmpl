@@ -5,7 +5,9 @@ var self = this;
 <dt class="<?js= (data.stability && data.stability !== 'stable') ? 'unstable' : '' ?>">
     <div class="nameContainer<?js if (data.inherited) { ?> inherited<?js } ?>">
         <?js if (data.stability || kind !== 'class') { ?>
-        <h4 class="name" id="<?js= id ?>">
+        <div class="anchor" id="<?js= id ?>">
+        </div>
+        <h4 class="name">
             <?js= data.attribs + (kind === 'class' ? 'new ' : '') + (data.scope === 'static' ? longname : name) + (kind !== 'event' ? data.signature : '') ?>
             <?js if (data.inherited || data.inherits) { ?>
                 <span class="inherited"><?js= this.linkto(data.inherits, 'inherited') ?></span>
@@ -24,6 +26,10 @@ var self = this;
     <?js } ?>
 </dt>
 <dd class="<?js= (data.stability && data.stability !== 'stable') ? 'unstable' : '' ?>">
+
+<?js if (data.parent && data.parent.kind == 'module' && data.parent.name.split('ol/').length < 3) { ?>
+  <pre class="prettyprint source"><code>import {<?js= data.name ?>} from '<?js= data.parent.name ?>';</code></pre>
+<?js } ?>
 
     <?js if (data.description) { ?>
     <div class="description">
@@ -75,7 +81,7 @@ var self = this;
                 (<?js= self.linkto(eventClass.longname) ?>)
               <?js } ?>
             <?js } ?>
-            <?js= self.partial('stability.tmpl', eventDoclet || (data.stability ? data : {stability: 'experimental'})) ?>
+            <?js= self.partial('stability.tmpl', eventDoclet || (data.stability ? data : {})) ?>
             <?js if (description) { ?> -
             <?js= description ?>
             <?js } ?>

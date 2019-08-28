@@ -1,16 +1,14 @@
-/* global resemble:false */
-/* eslint-disable openlayers-internal/no-missing-requires */
+import {equals} from '../src/ol/array.js';
+// avoid importing anything that results in an instanceof check
+// since these extensions are global, instanceof checks fail with modules
 
-// FIXME remove afterLoadXml as it uses the wrong XML parser on IE9
-
-// helper functions for async testing and other utility functions.
 (function(global) {
 
   // show generated maps for rendering tests
-  var showMap = (global.location.search.indexOf('generate') >= 0);
+  const showMap = (global.location.search.indexOf('generate') >= 0);
 
   // show a diff when rendering tests fail
-  var showDiff = (global.location.search.indexOf('showdiff') >= 0);
+  const showDiff = (global.location.search.indexOf('showdiff') >= 0);
 
   /**
    * The default tolerance for image comparisons.
@@ -18,10 +16,10 @@
   global.IMAGE_TOLERANCE = 1.5;
 
   function afterLoad(type, path, next) {
-    var client = new XMLHttpRequest();
+    const client = new XMLHttpRequest();
     client.open('GET', path, true);
     client.onload = function() {
-      var data;
+      let data;
       if (type === 'xml') {
         data = client.responseXML;
       } else {
@@ -66,7 +64,7 @@
 
 
   // extensions to expect.js
-  var expect = global.expect;
+  const expect = global.expect;
 
 
   /**
@@ -77,15 +75,15 @@
    */
   expect.Assertion.prototype.roughlyEqual = function(n, tol) {
     this.assert(
-        Math.abs(this.obj - n) <= tol,
-        function() {
-          return 'expected ' + expect.stringify(this.obj) + ' to be within ' +
+      Math.abs(this.obj - n) <= tol,
+      function() {
+        return 'expected ' + expect.stringify(this.obj) + ' to be within ' +
               tol + ' of ' + n;
-        },
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      },
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' not to be within ' + tol + ' of ' + n;
-        });
+      });
     return this;
   };
 
@@ -96,13 +94,13 @@
    */
   expect.Assertion.prototype.called = function() {
     this.assert(
-        this.obj.called,
-        function() {
-          return 'expected ' + expect.stringify(this.obj) + ' to be called';
-        },
-        function() {
-          return 'expected ' + expect.stringify(this.obj) + ' not to be called';
-        });
+      this.obj.called,
+      function() {
+        return 'expected ' + expect.stringify(this.obj) + ' to be called';
+      },
+      function() {
+        return 'expected ' + expect.stringify(this.obj) + ' not to be called';
+      });
     return this;
   };
 
@@ -112,9 +110,9 @@
     if (options && options.includeWhiteSpace) {
       return node.childNodes;
     } else {
-      var nodes = [];
-      for (var i = 0, ii = node.childNodes.length; i < ii; i++) {
-        var child = node.childNodes[i];
+      const nodes = [];
+      for (let i = 0, ii = node.childNodes.length; i < ii; i++) {
+        const child = node.childNodes[i];
         if (child.nodeType == 1) {
           // element node, add it
           nodes.push(child);
@@ -136,7 +134,7 @@
   }
 
   function assertElementNodesEqual(node1, node2, options, errors) {
-    var testPrefix = (options && options.prefix === true);
+    const testPrefix = (options && options.prefix === true);
     if (node1.nodeType !== node2.nodeType) {
       errors.push('nodeType test failed for: ' + node1.nodeName + ' | ' +
         node2.nodeName + ' | expected ' + node1.nodeType + ' to equal ' +
@@ -149,8 +147,8 @@
             node2.nodeName);
       }
     } else {
-      var n1 = node1.nodeName.split(':').pop();
-      var n2 = node2.nodeName.split(':').pop();
+      const n1 = node1.nodeName.split(':').pop();
+      const n2 = node2.nodeName.split(':').pop();
       if (n1 !== n2) {
         errors.push('nodeName test failed for: ' + node1.nodeName + ' | ' +
             node2.nodeName + ' | expected ' + n1 + ' to equal ' + n2);
@@ -158,8 +156,8 @@
     }
     // for text nodes compare value
     if (node1.nodeType === 3) {
-      var nv1 = node1.nodeValue.replace(/\s/g, '');
-      var nv2 = node2.nodeValue.replace(/\s/g, '');
+      const nv1 = node1.nodeValue.replace(/\s/g, '');
+      const nv2 = node2.nodeValue.replace(/\s/g, '');
       if (nv1 !== nv2) {
         errors.push('nodeValue test failed | expected ' + nv1 + ' to equal ' +
             nv2);
@@ -183,12 +181,12 @@
         }
       }
       // compare attributes - disregard xmlns given namespace handling above
-      var node1AttrLen = 0;
-      var node1Attr = {};
-      var node2AttrLen = 0;
-      var node2Attr = {};
-      var ga, ea, gn, en;
-      var i, ii;
+      let node1AttrLen = 0;
+      const node1Attr = {};
+      let node2AttrLen = 0;
+      const node2Attr = {};
+      let ga, ea, gn, en;
+      let i, ii;
       if (node1.attributes) {
         for (i = 0, ii = node1.attributes.length; i < ii; ++i) {
           ga = node1.attributes[i];
@@ -217,7 +215,7 @@
         errors.push('Number of attributes test failed for: ' + node1.nodeName +
             ' | expected ' + node1AttrLen + ' to equal ' + node2AttrLen);
       }
-      for (var name in node1Attr) {
+      for (const name in node1Attr) {
         if (node2Attr[name] === undefined) {
           errors.push('Attribute name ' + node1Attr[name].name +
               ' expected for element ' + node1.nodeName);
@@ -241,14 +239,14 @@
         }
       }
       // compare children
-      var node1ChildNodes = getChildNodes(node1, options);
-      var node2ChildNodes = getChildNodes(node2, options);
+      const node1ChildNodes = getChildNodes(node1, options);
+      const node2ChildNodes = getChildNodes(node2, options);
       if (node1ChildNodes.length !== node2ChildNodes.length) {
         // check if all child nodes are text, they could be split up in
         // 4096 chunks
         // if so, ignore the childnode count error
-        var allText = true;
-        var c, cc;
+        let allText = true;
+        let c, cc;
         for (c = 0, cc = node1ChildNodes.length; c < cc; ++c) {
           if (node1ChildNodes[c].nodeType !== 3) {
             allText = false;
@@ -269,9 +267,9 @@
       }
       // only compare if they are equal
       if (node1ChildNodes.length === node2ChildNodes.length) {
-        for (var j = 0, jj = node1ChildNodes.length; j < jj; ++j) {
+        for (let j = 0, jj = node1ChildNodes.length; j < jj; ++j) {
           assertElementNodesEqual(
-              node1ChildNodes[j], node2ChildNodes[j], options, errors);
+            node1ChildNodes[j], node2ChildNodes[j], options, errors);
         }
       }
     }
@@ -292,21 +290,21 @@
     if (this.obj && this.obj.nodeType == 9) {
       this.obj = this.obj.documentElement;
     }
-    var errors = [];
+    const errors = [];
     assertElementNodesEqual(obj, this.obj, options, errors);
-    var result = (errors.length === 0);
+    const result = (errors.length === 0);
     this.assert(
-        !!result,
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      !!result,
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of equal ' + expect.stringify(obj) + '\n' +
               errors.join('\n');
-        },
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      },
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of not equal ' + expect.stringify(obj) + '\n' +
               errors.join('\n');
-        });
+      });
     return this;
   };
 
@@ -318,15 +316,15 @@
    */
   expect.Assertion.prototype.arreql = function(obj) {
     this.assert(
-        ol.array.equals(this.obj, obj),
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      equals(this.obj, obj),
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of equal ' + expect.stringify(obj);
-        },
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      },
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of not equal ' + expect.stringify(obj);
-        });
+      });
     return this;
   };
 
@@ -338,26 +336,26 @@
    */
   expect.Assertion.prototype.arreqlNaN = function(obj) {
     function compare(a, i) {
-      var b = obj[i];
+      const b = obj[i];
       return a === b || (typeof a === 'number' && typeof b === 'number' &&
           isNaN(a) && isNaN(b));
     }
     this.assert(
-        this.obj.length === obj.length && this.obj.every(compare),
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      this.obj.length === obj.length && this.obj.every(compare),
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of equal ' + expect.stringify(obj);
-        },
-        function() {
-          return 'expected ' + expect.stringify(this.obj) +
+      },
+      function() {
+        return 'expected ' + expect.stringify(this.obj) +
               ' to sort of not equal ' + expect.stringify(obj);
-        });
+      });
     return this;
   };
 
   global.createMapDiv = function(width, height) {
-    var target = document.createElement('div');
-    var style = target.style;
+    const target = document.createElement('div');
+    const style = target.style;
     style.position = 'absolute';
     style.left = '-1000px';
     style.top = '-1000px';
@@ -369,60 +367,68 @@
   };
 
   global.disposeMap = function(map) {
-    var target = map.getTarget();
+    const target = map.getTarget();
     map.setTarget(null);
-    map.dispose();
-    document.body.removeChild(target);
-  };
-
-  global.assertWebGL = function(map) {
-    if (!ol.has.WEBGL) {
-      expect().fail('No WebGL support!');
+    if (target && target.parentNode) {
+      target.parentNode.removeChild(target);
     }
+    map.dispose();
   };
 
   function resembleCanvas(canvas, referenceImage, tolerance, done) {
     if (showMap) {
-      var wrapper = document.createElement('div');
+      const wrapper = document.createElement('div');
       wrapper.style.width = canvas.width + 'px';
       wrapper.style.height = canvas.height + 'px';
       wrapper.appendChild(canvas);
       document.body.appendChild(wrapper);
       document.body.appendChild(document.createTextNode(referenceImage));
     }
-
-    resemble(referenceImage)
-      .compareTo(canvas.getContext('2d').getImageData(
-          0, 0, canvas.width, canvas.height))
-      .onComplete(function(data) {
-        if (!data.isSameDimensions) {
-          expect().fail(
-            'The dimensions of the reference image and ' +
-            'the test canvas are not the same.');
-        }
-
-        if (data.misMatchPercentage > tolerance) {
-          if (showDiff) {
-            var diffImage = new Image();
-            diffImage.src = data.getImageDataUrl();
-            document.body.appendChild(diffImage);
-          }
-          expect(data.misMatchPercentage).to.be.below(tolerance);
-        }
-        done();
-      });
+    const width = canvas.width;
+    const height = canvas.height;
+    const image = new Image();
+    image.addEventListener('load', function() {
+      expect(image.width).to.be(width);
+      expect(image.height).to.be(height);
+      const referenceCanvas = document.createElement('canvas');
+      referenceCanvas.width = image.width;
+      referenceCanvas.height = image.height;
+      const referenceContext = referenceCanvas.getContext('2d');
+      referenceContext.drawImage(image, 0, 0, image.width, image.height);
+      const context = canvas.getContext('2d');
+      const output = context.createImageData(canvas.width, canvas.height);
+      const mismatchPx = pixelmatch(
+        context.getImageData(0, 0, width, height).data,
+        referenceContext.getImageData(0, 0, width, height).data,
+        output.data, width, height);
+      const mismatchPct = mismatchPx / (width * height) * 100;
+      if (showDiff && mismatchPct > tolerance) {
+        const diffCanvas = document.createElement('canvas');
+        diffCanvas.width = width;
+        diffCanvas.height = height;
+        diffCanvas.getContext('2d').putImageData(output, 0, 0);
+        document.body.appendChild(diffCanvas);
+      }
+      expect(mismatchPct).to.be.below(tolerance);
+      done();
+    });
+    image.addEventListener('error', function() {
+      expect().fail('Reference image could not be loaded');
+      done();
+    });
+    image.src = referenceImage;
   }
   global.resembleCanvas = resembleCanvas;
 
-  function expectResembleCanvas(map, referenceImage, tolerance, done) {
-    map.render();
-    map.on('postcompose', function(event) {
-      var canvas = event.context.canvas;
-      resembleCanvas(canvas, referenceImage, tolerance, done);
-    });
-  }
-
-  function expectResembleWebGL(map, referenceImage, tolerance, done) {
+  /**
+   * Assert that the given map resembles a reference image.
+   *
+   * @param {ol.PluggableMap} map A map using the canvas renderer.
+   * @param {string} referenceImage Path to the reference image.
+   * @param {number} tolerance The accepted mismatch tolerance.
+   * @param {function} done A callback to indicate that the test is done.
+   */
+  global.expectResemble = function(map, referenceImage, tolerance, done) {
     map.render();
     map.on('postcompose', function(event) {
       if (event.frameState.animate) {
@@ -430,43 +436,19 @@
         return;
       }
 
-      var webglCanvas = event.glContext.getCanvas();
-      expect(webglCanvas).to.be.a(HTMLCanvasElement);
-
-      // draw the WebGL canvas on a new canvas, because we can not create
-      // a 2d context for that canvas because there is already a webgl context.
-      var canvas = document.createElement('canvas');
-      canvas.width = webglCanvas.width;
-      canvas.height = webglCanvas.height;
-      canvas.getContext('2d').drawImage(webglCanvas, 0, 0,
-          webglCanvas.width, webglCanvas.height);
+      const canvas = event.context.canvas;
+      expect(canvas).to.be.a(HTMLCanvasElement);
 
       resembleCanvas(canvas, referenceImage, tolerance, done);
     });
-  }
-
-  /**
-   * Assert that the given map resembles a reference image.
-   *
-   * @param {ol.Map} map A map using the canvas renderer.
-   * @param {string} referenceImage Path to the reference image.
-   * @param {number} tolerance The accepted mismatch tolerance.
-   * @param {function} done A callback to indicate that the test is done.
-   */
-  global.expectResemble = function(map, referenceImage, tolerance, done) {
-    if (map.getRenderer() instanceof ol.renderer.canvas.Map) {
-      expectResembleCanvas(map, referenceImage, tolerance, done);
-    } else if (map.getRenderer() instanceof ol.renderer.webgl.Map) {
-      expectResembleWebGL(map, referenceImage, tolerance, done);
-    } else {
-      expect().fail(
-        'resemble only works with the canvas and WebGL renderer.');
-    }
   };
 
-  var features = {
-    ArrayBuffer: typeof ArrayBuffer === 'function',
-    Uint8ClampedArray: ('Uint8ClampedArray' in global)
+  const features = {
+    ArrayBuffer: 'ArrayBuffer' in global,
+    'ArrayBuffer.isView': 'ArrayBuffer' in global && !!ArrayBuffer.isView,
+    FileReader: 'FileReader' in global,
+    Uint8ClampedArray: ('Uint8ClampedArray' in global),
+    WebGL: false
   };
 
   /**
@@ -482,8 +464,17 @@
       throw new Error('where() called with unknown key: ' + key);
     }
     return {
-      describe: features[key] ? global.describe : global.xdescribe
+      describe: features[key] ? global.describe : global.xdescribe,
+      it: features[key] ? global.it : global.xit
     };
   };
 
-})(this);
+  // throw if anybody appends a div to the body and doesn't remove it
+  afterEach(function() {
+    const garbage = document.body.getElementsByTagName('div');
+    if (garbage.length) {
+      throw new Error('Found extra <div> elements in the body');
+    }
+  });
+
+})(window);

@@ -1,43 +1,34 @@
-goog.require('ol.Map');
-goog.require('ol.Observable');
-goog.require('ol.Overlay');
-goog.require('ol.Sphere');
-goog.require('ol.View');
-goog.require('ol.geom.LineString');
-goog.require('ol.geom.Polygon');
-goog.require('ol.interaction.Draw');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Map from '../src/ol/Map.js';
+import {unByKey} from '../src/ol/Observable.js';
+import Overlay from '../src/ol/Overlay.js';
+import {getArea, getLength} from '../src/ol/sphere.js';
+import View from '../src/ol/View.js';
+import {LineString, Polygon} from '../src/ol/geom.js';
+import Draw from '../src/ol/interaction/Draw.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
 
 
-var wgs84Sphere = new ol.Sphere(6378137);
-
-var raster = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const raster = new TileLayer({
+  source: new OSM()
 });
 
-var source = new ol.source.Vector();
+const source = new VectorSource();
 
-var vector = new ol.layer.Vector({
+const vector = new VectorLayer({
   source: source,
-  style: new ol.style.Style({
-    fill: new ol.style.Fill({
+  style: new Style({
+    fill: new Fill({
       color: 'rgba(255, 255, 255, 0.2)'
     }),
-    stroke: new ol.style.Stroke({
+    stroke: new Stroke({
       color: '#ffcc33',
       width: 2
     }),
-    image: new ol.style.Circle({
+    image: new CircleStyle({
       radius: 7,
-      fill: new ol.style.Fill({
+      fill: new Fill({
         color: '#ffcc33'
       })
     })
@@ -47,69 +38,69 @@ var vector = new ol.layer.Vector({
 
 /**
  * Currently drawn feature.
- * @type {ol.Feature}
+ * @type {import("../src/ol/Feature.js").default}
  */
-var sketch;
+let sketch;
 
 
 /**
  * The help tooltip element.
- * @type {Element}
+ * @type {HTMLElement}
  */
-var helpTooltipElement;
+let helpTooltipElement;
 
 
 /**
  * Overlay to show the help messages.
- * @type {ol.Overlay}
+ * @type {Overlay}
  */
-var helpTooltip;
+let helpTooltip;
 
 
 /**
  * The measure tooltip element.
- * @type {Element}
+ * @type {HTMLElement}
  */
-var measureTooltipElement;
+let measureTooltipElement;
 
 
 /**
  * Overlay to show the measurement.
- * @type {ol.Overlay}
+ * @type {Overlay}
  */
-var measureTooltip;
+let measureTooltip;
 
 
 /**
  * Message to show when the user is drawing a polygon.
  * @type {string}
  */
-var continuePolygonMsg = 'Click to continue drawing the polygon';
+const continuePolygonMsg = 'Click to continue drawing the polygon';
 
 
 /**
  * Message to show when the user is drawing a line.
  * @type {string}
  */
-var continueLineMsg = 'Click to continue drawing the line';
+const continueLineMsg = 'Click to continue drawing the line';
 
 
 /**
  * Handle pointer move.
- * @param {ol.MapBrowserEvent} evt The event.
+ * @param {import("../src/ol/MapBrowserEvent").default} evt The event.
  */
-var pointerMoveHandler = function(evt) {
+const pointerMoveHandler = function(evt) {
   if (evt.dragging) {
     return;
   }
   /** @type {string} */
-  var helpMsg = 'Click to start drawing';
+  let helpMsg = 'Click to start drawing';
 
   if (sketch) {
-    var geom = (sketch.getGeometry());
-    if (geom instanceof ol.geom.Polygon) {
+    const geom = sketch.getGeometry();
+    if (geom instanceof Polygon) {
       helpMsg = continuePolygonMsg;
-    } else if (geom instanceof ol.geom.LineString) {
+    } else if (geom instanceof LineString) {
       helpMsg = continueLineMsg;
     }
   }
@@ -121,10 +112,10 @@ var pointerMoveHandler = function(evt) {
 };
 
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     center: [-11000000, 4600000],
     zoom: 15
   })
@@ -136,32 +127,19 @@ map.getViewport().addEventListener('mouseout', function() {
   helpTooltipElement.classList.add('hidden');
 });
 
-var typeSelect = document.getElementById('type');
-var geodesicCheckbox = document.getElementById('geodesic');
+const typeSelect = document.getElementById('type');
 
-var draw; // global so we can remove it later
+let draw; // global so we can remove it later
 
 
 /**
  * Format length output.
- * @param {ol.geom.LineString} line The line.
+ * @param {LineString} line The line.
  * @return {string} The formatted length.
  */
-var formatLength = function(line) {
-  var length;
-  if (geodesicCheckbox.checked) {
-    var coordinates = line.getCoordinates();
-    length = 0;
-    var sourceProj = map.getView().getProjection();
-    for (var i = 0, ii = coordinates.length - 1; i < ii; ++i) {
-      var c1 = ol.proj.transform(coordinates[i], sourceProj, 'EPSG:4326');
-      var c2 = ol.proj.transform(coordinates[i + 1], sourceProj, 'EPSG:4326');
-      length += wgs84Sphere.haversineDistance(c1, c2);
-    }
-  } else {
-    length = Math.round(line.getLength() * 100) / 100;
-  }
-  var output;
+const formatLength = function(line) {
+  const length = getLength(line);
+  let output;
   if (length > 100) {
     output = (Math.round(length / 1000 * 100) / 100) +
         ' ' + 'km';
@@ -175,21 +153,12 @@ var formatLength = function(line) {
 
 /**
  * Format area output.
- * @param {ol.geom.Polygon} polygon The polygon.
+ * @param {Polygon} polygon The polygon.
  * @return {string} Formatted area.
  */
-var formatArea = function(polygon) {
-  var area;
-  if (geodesicCheckbox.checked) {
-    var sourceProj = map.getView().getProjection();
-    var geom = /** @type {ol.geom.Polygon} */(polygon.clone().transform(
-        sourceProj, 'EPSG:4326'));
-    var coordinates = geom.getLinearRing(0).getCoordinates();
-    area = Math.abs(wgs84Sphere.geodesicArea(coordinates));
-  } else {
-    area = polygon.getArea();
-  }
-  var output;
+const formatArea = function(polygon) {
+  const area = getArea(polygon);
+  let output;
   if (area > 10000) {
     output = (Math.round(area / 1000000 * 100) / 100) +
         ' ' + 'km<sup>2</sup>';
@@ -201,25 +170,25 @@ var formatArea = function(polygon) {
 };
 
 function addInteraction() {
-  var type = (typeSelect.value == 'area' ? 'Polygon' : 'LineString');
-  draw = new ol.interaction.Draw({
+  const type = (typeSelect.value == 'area' ? 'Polygon' : 'LineString');
+  draw = new Draw({
     source: source,
-    type: /** @type {ol.geom.GeometryType} */ (type),
-    style: new ol.style.Style({
-      fill: new ol.style.Fill({
+    type: type,
+    style: new Style({
+      fill: new Fill({
         color: 'rgba(255, 255, 255, 0.2)'
       }),
-      stroke: new ol.style.Stroke({
+      stroke: new Stroke({
         color: 'rgba(0, 0, 0, 0.5)',
         lineDash: [10, 10],
         width: 2
       }),
-      image: new ol.style.Circle({
+      image: new CircleStyle({
         radius: 5,
-        stroke: new ol.style.Stroke({
+        stroke: new Stroke({
           color: 'rgba(0, 0, 0, 0.7)'
         }),
-        fill: new ol.style.Fill({
+        fill: new Fill({
           color: 'rgba(255, 255, 255, 0.2)'
         })
       })
@@ -230,41 +199,41 @@ function addInteraction() {
   createMeasureTooltip();
   createHelpTooltip();
 
-  var listener;
+  let listener;
   draw.on('drawstart',
-      function(evt) {
-        // set sketch
-        sketch = evt.feature;
+    function(evt) {
+      // set sketch
+      sketch = evt.feature;
 
-        /** @type {ol.Coordinate|undefined} */
-        var tooltipCoord = evt.coordinate;
+      /** @type {import("../src/ol/coordinate.js").Coordinate|undefined} */
+      let tooltipCoord = evt.coordinate;
 
-        listener = sketch.getGeometry().on('change', function(evt) {
-          var geom = evt.target;
-          var output;
-          if (geom instanceof ol.geom.Polygon) {
-            output = formatArea(geom);
-            tooltipCoord = geom.getInteriorPoint().getCoordinates();
-          } else if (geom instanceof ol.geom.LineString) {
-            output = formatLength(geom);
-            tooltipCoord = geom.getLastCoordinate();
-          }
-          measureTooltipElement.innerHTML = output;
-          measureTooltip.setPosition(tooltipCoord);
-        });
-      }, this);
+      listener = sketch.getGeometry().on('change', function(evt) {
+        const geom = evt.target;
+        let output;
+        if (geom instanceof Polygon) {
+          output = formatArea(geom);
+          tooltipCoord = geom.getInteriorPoint().getCoordinates();
+        } else if (geom instanceof LineString) {
+          output = formatLength(geom);
+          tooltipCoord = geom.getLastCoordinate();
+        }
+        measureTooltipElement.innerHTML = output;
+        measureTooltip.setPosition(tooltipCoord);
+      });
+    });
 
   draw.on('drawend',
-      function() {
-        measureTooltipElement.className = 'tooltip tooltip-static';
-        measureTooltip.setOffset([0, -7]);
-        // unset sketch
-        sketch = null;
-        // unset tooltip so that a new one can be created
-        measureTooltipElement = null;
-        createMeasureTooltip();
-        ol.Observable.unByKey(listener);
-      }, this);
+    function() {
+      measureTooltipElement.className = 'ol-tooltip ol-tooltip-static';
+      measureTooltip.setOffset([0, -7]);
+      // unset sketch
+      sketch = null;
+      // unset tooltip so that a new one can be created
+      measureTooltipElement = null;
+      createMeasureTooltip();
+      unByKey(listener);
+    });
 }
 
 
@@ -276,8 +245,8 @@ function createHelpTooltip() {
     helpTooltipElement.parentNode.removeChild(helpTooltipElement);
   }
   helpTooltipElement = document.createElement('div');
-  helpTooltipElement.className = 'tooltip hidden';
-  helpTooltip = new ol.Overlay({
+  helpTooltipElement.className = 'ol-tooltip hidden';
+  helpTooltip = new Overlay({
     element: helpTooltipElement,
     offset: [15, 0],
     positioning: 'center-left'
@@ -294,8 +263,8 @@ function createMeasureTooltip() {
     measureTooltipElement.parentNode.removeChild(measureTooltipElement);
   }
   measureTooltipElement = document.createElement('div');
-  measureTooltipElement.className = 'tooltip tooltip-measure';
-  measureTooltip = new ol.Overlay({
+  measureTooltipElement.className = 'ol-tooltip ol-tooltip-measure';
+  measureTooltip = new Overlay({
     element: measureTooltipElement,
     offset: [0, -15],
     positioning: 'bottom-center'

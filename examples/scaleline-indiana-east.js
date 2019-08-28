@@ -1,9 +1,11 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control.ScaleLine');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import {ScaleLine} from '../src/ol/control.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import {fromLonLat, transformExtent} from '../src/ol/proj.js';
+import {register} from '../src/ol/proj/proj4.js';
+import OSM from '../src/ol/source/OSM.js';
+import proj4 from 'proj4';
 
 proj4.defs('Indiana-East', 'PROJCS["IN83-EF",GEOGCS["LL83",DATUM["NAD83",' +
     'SPHEROID["GRS1980",6378137.000,298.25722210]],PRIMEM["Greenwich",0],' +
@@ -14,22 +16,23 @@ proj4.defs('Indiana-East', 'PROJCS["IN83-EF",GEOGCS["LL83",DATUM["NAD83",' +
     'PARAMETER["central_meridian",-85.66666666666670],' +
     'PARAMETER["latitude_of_origin",37.50000000000000],' +
     'UNIT["Foot_US",0.30480060960122]]');
+register(proj4);
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',
-  view: new ol.View({
+  view: new View({
     projection: 'Indiana-East',
-    center: ol.proj.fromLonLat([-85.685, 39.891], 'Indiana-East'),
+    center: fromLonLat([-85.685, 39.891], 'Indiana-East'),
     zoom: 7,
-    extent: ol.proj.transformExtent([-172.54, 23.81, -47.74, 86.46],
-        'EPSG:4326', 'Indiana-East'),
+    extent: transformExtent([-172.54, 23.81, -47.74, 86.46],
+      'EPSG:4326', 'Indiana-East'),
     minZoom: 6
   })
 });
 
-map.addControl(new ol.control.ScaleLine({units: 'us'}));
+map.addControl(new ScaleLine({units: 'us'}));

@@ -1,18 +1,16 @@
-goog.provide('ol.test.source.CartoDBSource');
-
-goog.require('ol.source.CartoDB');
-goog.require('ol.source.XYZ');
+import CartoDB from '../../../../src/ol/source/CartoDB.js';
+import XYZ from '../../../../src/ol/source/XYZ.js';
 
 describe('ol.source.CartoDB', function() {
 
   describe('constructor', function() {
     it('returns a CartoDB source', function() {
-      var source = new ol.source.CartoDB({
+      const source = new CartoDB({
         account: 'documentation',
         config: {}
       });
-      expect(source).to.be.a(ol.source.XYZ);
-      expect(source).to.be.a(ol.source.CartoDB);
+      expect(source).to.be.a(XYZ);
+      expect(source).to.be.a(CartoDB);
     });
   });
 });

@@ -1,39 +1,32 @@
-goog.require('ol.Feature');
-goog.require('ol.Geolocation');
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.geom.Point');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.source.OSM');
-goog.require('ol.source.Vector');
-goog.require('ol.style.Circle');
-goog.require('ol.style.Fill');
-goog.require('ol.style.Stroke');
-goog.require('ol.style.Style');
+import Feature from '../src/ol/Feature.js';
+import Geolocation from '../src/ol/Geolocation.js';
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import Point from '../src/ol/geom/Point.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import {OSM, Vector as VectorSource} from '../src/ol/source.js';
+import {Circle as CircleStyle, Fill, Stroke, Style} from '../src/ol/style.js';
 
-var view = new ol.View({
+const view = new View({
   center: [0, 0],
   zoom: 2
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
+    new TileLayer({
+      source: new OSM()
     })
   ],
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
   view: view
 });
 
-var geolocation = new ol.Geolocation({
+const geolocation = new Geolocation({
+  // enableHighAccuracy must be set to true to have the heading value.
+  trackingOptions: {
+    enableHighAccuracy: true
+  },
   projection: view.getProjection()
 });
 
@@ -56,24 +49,24 @@ geolocation.on('change', function() {
 
 // handle geolocation error.
 geolocation.on('error', function(error) {
-  var info = document.getElementById('info');
+  const info = document.getElementById('info');
   info.innerHTML = error.message;
   info.style.display = '';
 });
 
-var accuracyFeature = new ol.Feature();
+const accuracyFeature = new Feature();
 geolocation.on('change:accuracyGeometry', function() {
   accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
 });
 
-var positionFeature = new ol.Feature();
-positionFeature.setStyle(new ol.style.Style({
-  image: new ol.style.Circle({
+const positionFeature = new Feature();
+positionFeature.setStyle(new Style({
+  image: new CircleStyle({
     radius: 6,
-    fill: new ol.style.Fill({
+    fill: new Fill({
       color: '#3399CC'
     }),
-    stroke: new ol.style.Stroke({
+    stroke: new Stroke({
       color: '#fff',
       width: 2
     })
@@ -81,14 +74,14 @@ positionFeature.setStyle(new ol.style.Style({
 }));
 
 geolocation.on('change:position', function() {
-  var coordinates = geolocation.getPosition();
+  const coordinates = geolocation.getPosition();
   positionFeature.setGeometry(coordinates ?
-      new ol.geom.Point(coordinates) : null);
+    new Point(coordinates) : null);
 });
 
-new ol.layer.Vector({
+new VectorLayer({
   map: map,
-  source: new ol.source.Vector({
+  source: new VectorSource({
     features: [accuracyFeature, positionFeature]
   })
 });

@@ -1,10 +1,10 @@
-goog.require('ol.format.WMTSCapabilities');
+import WMTSCapabilities from '../src/ol/format/WMTSCapabilities.js';
 
-var parser = new ol.format.WMTSCapabilities();
+const parser = new WMTSCapabilities();
 
 fetch('data/WMTSCapabilities.xml').then(function(response) {
   return response.text();
 }).then(function(text) {
-  var result = parser.read(text);
+  const result = parser.read(text);
   document.getElementById('log').innerText = JSON.stringify(result, null, 2);
 });

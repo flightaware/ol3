@@ -1,25 +1,24 @@
-goog.provide('ol.geom.flat.center');
-
-goog.require('ol.extent');
+/**
+ * @module ol/geom/flat/center
+ */
+import {createEmpty, createOrUpdateFromFlatCoordinates} from '../../extent.js';
 
 
 /**
- * @param {Array.<number>} flatCoordinates Flat coordinates.
+ * @param {Array<number>} flatCoordinates Flat coordinates.
  * @param {number} offset Offset.
- * @param {Array.<Array.<number>>} endss Endss.
+ * @param {Array<Array<number>>} endss Endss.
  * @param {number} stride Stride.
- * @return {Array.<number>} Flat centers.
+ * @return {Array<number>} Flat centers.
  */
-ol.geom.flat.center.linearRingss = function(flatCoordinates, offset, endss, stride) {
-  var flatCenters = [];
-  var i, ii;
-  var extent = ol.extent.createEmpty();
-  for (i = 0, ii = endss.length; i < ii; ++i) {
-    var ends = endss[i];
-    extent = ol.extent.createOrUpdateFromFlatCoordinates(
-        flatCoordinates, offset, ends[0], stride);
+export function linearRingss(flatCoordinates, offset, endss, stride) {
+  const flatCenters = [];
+  let extent = createEmpty();
+  for (let i = 0, ii = endss.length; i < ii; ++i) {
+    const ends = endss[i];
+    extent = createOrUpdateFromFlatCoordinates(flatCoordinates, offset, ends[0], stride);
     flatCenters.push((extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2);
     offset = ends[ends.length - 1];
   }
   return flatCenters;
-};
+}
