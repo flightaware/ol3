@@ -157,7 +157,7 @@ ol.Tile.prototype.getTileCoord = function() {
 
 
 /**
- * @return {ol.Tile.State} State.
+ * @return {ol.TileState} State.
  * @api
  */
 ol.Tile.prototype.getState = function() {
